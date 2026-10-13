@@ -2,6 +2,11 @@
   "bundle": {
     "resources": {
       "resources/gstreamer/libgsttauriasset.so": "gstreamer/libgsttauriasset.so"
+    },
+    "linux": {
+      "appimage": {
+        "bundleMediaFramework": true
+      }
     }
   }
 }
