@@ -59,6 +59,18 @@ fn configure_stream_playback() {
         }
     }
 
+    // AppImage's GStreamer hook sets GST_PLUGIN_PATH_1_0 separately.
+    // Preserve its standard plugin directory and add our custom stream plugin.
+    let mut versioned_paths = std::env::var_os("GST_PLUGIN_PATH_1_0")
+        .map(|existing| std::env::split_paths(&existing).collect::<Vec<_>>())
+        .unwrap_or_default();
+
+    for path in &paths {
+        if !versioned_paths.contains(path) {
+            versioned_paths.push(path.clone());
+        }
+    }
+
     unsafe {
         std::env::set_var(
             "WEBKIT_GST_ALLOWED_URI_PROTOCOLS",
@@ -68,6 +80,12 @@ fn configure_stream_playback() {
         if !paths.is_empty() {
             if let Ok(joined) = std::env::join_paths(&paths) {
                 std::env::set_var("GST_PLUGIN_PATH", joined);
+            }
+        }
+
+        if !versioned_paths.is_empty() {
+            if let Ok(joined) = std::env::join_paths(&versioned_paths) {
+                std::env::set_var("GST_PLUGIN_PATH_1_0", joined);
             }
         }
     }

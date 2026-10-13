@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "tauri": "tauri",
     "release": "bash scripts/release.sh",
-    "pretauri": "bash scripts/build-native-stream-plugin.sh"
+    "pretauri": "bash scripts/build-native-stream-plugin.sh",
+    "appimage:build": "bash scripts/build-appimage.sh"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
