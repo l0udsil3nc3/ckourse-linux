@@ -1,0 +1,2 @@
+PLUGIN_URL=https://github.com/tauri-apps/tauri-gstreamer-plugin.git
+PLUGIN_COMMIT=6ef3e686a1f0cce19a4c2b153299c42dee889482

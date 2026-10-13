@@ -31,3 +31,4 @@ dist-ssr
 
 # Specific files
 lemonsqueezy.txt
+/src-tauri/resources/gstreamer/libgsttauriasset.so

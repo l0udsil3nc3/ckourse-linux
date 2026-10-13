@@ -8,7 +8,8 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "tauri": "tauri",
-    "release": "bash scripts/release.sh"
+    "release": "bash scripts/release.sh",
+    "pretauri": "bash scripts/build-native-stream-plugin.sh"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
