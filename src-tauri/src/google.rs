@@ -224,12 +224,12 @@ fn serve_picker(
                 }
                 let (heading, result) = if cancel {
                     (
-                        "Selection cancelled — return to Ckourse.",
+                        "Selection cancelled — return to Ckourse Linux.",
                         Err("Folder selection cancelled".to_string()),
                     )
                 } else if let Some(id) = id {
                     (
-                        "Folder selected — return to Ckourse.",
+                        "Folder selected — return to Ckourse Linux.",
                         Ok(PickedFolder {
                             id,
                             name: name.unwrap_or_default(),
@@ -549,7 +549,7 @@ fn wait_for_code(listener: TcpListener, expected_state: &str) -> Result<String, 
         )
     } else if let Some(c) = code {
         (
-            "Connected to Google Drive — you can close this tab and return to Ckourse.",
+            "Connected to Google Drive — you can close this tab and return to Ckourse Linux.",
             Ok(c),
         )
     } else {
@@ -588,7 +588,7 @@ fn http_status(stream: &mut TcpStream, code: u16) {
 
 fn closing_html(heading: &str) -> String {
     format!(
-        "<!doctype html><html><head><meta charset=\"utf-8\"><title>Ckourse</title></head>\
+        "<!doctype html><html><head><meta charset=\"utf-8\"><title>Ckourse Linux</title></head>\
          <body style=\"font-family:system-ui,sans-serif;background:#0a0a0a;color:#eee;\
          display:flex;align-items:center;justify-content:center;height:100vh;margin:0\">\
          <h2 style=\"font-weight:600\">{heading}</h2></body></html>"

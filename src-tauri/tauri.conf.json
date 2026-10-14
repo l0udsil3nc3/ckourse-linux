@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "ckourse",
+  "productName": "Ckourse Linux",
   "version": "1.2.0",
   "identifier": "com.ckourse.app",
   "build": {
@@ -13,7 +13,7 @@
     "macOSPrivateApi": true,
     "windows": [
       {
-        "title": "",
+        "title": "Ckourse Linux",
         "width": 1280,
         "height": 800,
         "maximized": true,

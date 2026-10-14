@@ -1,8 +1,10 @@
-# Ckourse
+# Ckourse Linux
 
-> Your local course player — with progress that actually sticks.
+> A Linux-focused fork of Ckourse — your local course player, with progress that actually sticks.
 
-Ckourse is an open-source desktop application for watching and organizing downloaded courses. No subscriptions, no cloud, no chaos — just your files, beautifully organized with full progress tracking.
+Ckourse Linux is a community fork of [Ckourse](https://github.com/redaantar/ckourse), an open-source desktop application for watching and organizing downloaded courses. This fork focuses on Linux streaming playback, AppImage packaging, and shared progress and notes for videos reused across courses.
+
+> **Fork status:** This project retains the upstream bundle identifier and updater configuration for compatibility. Do not install it alongside upstream Ckourse or distribute independent releases until a separate application identifier and updater endpoint/signing key are configured.
 
 ---
 
@@ -12,14 +14,14 @@ You download a course from the internet. You get a folder with 80 videos, incons
 
 Your media player doesn't know what "Section 4 - Lesson 12" means. Your file manager doesn't track progress. Nothing ties it all together.
 
-**Ckourse does.**
+**Ckourse Linux does.**
 
 ---
 
 ## Features
 
 ### ✅ v1 — Core
-- 📁 **Smart folder import** — point Ckourse at any course folder and it parses the structure automatically, detecting sections, lessons, subtitles, and attachments
+- 📁 **Smart folder import** — point Ckourse Linux at any course folder and it parses the structure automatically, detecting sections, lessons, subtitles, and attachments
 - ☁️ **Google Drive courses** — connect your own Google account and import a course straight from Drive, streaming lessons without downloading the whole folder first
 - ▶️ **Built-in video player** — native HTML5 player with subtitle support, timestamp navigation, and autoplay with a configurable delay between lessons
 - 📊 **Progress tracking** — per-lesson completion, per-course progress bar, resume from exactly where you stopped
@@ -57,7 +59,7 @@ Your media player doesn't know what "Section 4 - Lesson 12" means. Your file man
 
 ## Download
 
-Pre-built installers for macOS and Windows are available on the [Releases page](https://github.com/redaantar/ckourse/releases).
+This fork has not published its own release artifacts yet. See [upstream Ckourse releases](https://github.com/redaantar/ckourse/releases) for upstream builds.
 
 ---
 
@@ -72,9 +74,9 @@ Pre-built installers for macOS and Windows are available on the [Releases page](
 ### Development
 
 ```bash
-# Clone the repository
-git clone https://github.com/redaantar/ckourse.git
-cd ckourse
+# Clone your Ckourse Linux fork
+git clone https://github.com/l0udsil3nc3/ckourse-linux.git
+cd ckourse-linux
 
 # Install frontend dependencies
 npm install
@@ -82,7 +84,7 @@ npm install
 # Run in development mode (macOS / Windows / Linux)
 npm run tauri dev
 
-# Build for production (produces installers for the current OS)
+# Build for production (Tauri bundles for the current OS)
 npm run tauri build
 ```
 
@@ -105,13 +107,15 @@ npm run tauri build
 
 Output: `.msi` and `.exe` under `src-tauri\target\release\bundle\`.
 
-**Linux** — build `.deb` / `.AppImage`:
+**Linux** — build Tauri Linux bundles:
 
 ```bash
 npm run tauri build
 ```
 
-Output: `.deb` and `.AppImage` under `src-tauri/target/release/bundle/`.
+Output: bundles under `src-tauri/target/release/bundle/`. The custom AppImage
+pipeline is `npm run appimage:build`. The AppImage has been tested; DEB and RPM
+packages have been generated but are not yet functionally tested.
 
 ### Environment variables (optional)
 
@@ -130,7 +134,7 @@ CI builds macOS (universal) and Windows installers on tag push — see [`.github
 
 ## Google Drive Setup
 
-Drive support is **bring-your-own-credentials**: you create a personal Google Cloud project and paste its credentials into Ckourse's Settings. Nothing is shipped with the app and nothing is sent to a Ckourse server — credentials are stored in your OS keychain, and the app talks to Google directly.
+Drive support is **bring-your-own-credentials**: you create a personal Google Cloud project and paste its credentials into Ckourse Linux's Settings. Nothing is shipped with the app and nothing is sent to a Ckourse server — credentials are stored in your OS keychain, and the app talks to Google directly.
 
 This is deliberate. Reading a course folder requires the Restricted `drive.readonly` scope, which would demand an annual third-party security assessment for a shared, published app. Using your own project — which stays in "testing" mode — sidesteps that entirely and keeps your files under your own account.
 
@@ -141,7 +145,7 @@ The app ships an interactive walkthrough (**Settings → Google Drive → Setup 
 3. Configure the OAuth consent screen and add your own Google account as a test user.
 4. Create an **OAuth client ID** (application type: *Web application*).
 5. Create an **API key** — this powers the folder picker.
-6. Paste the client ID, client secret, and API key into Ckourse's Settings, then click Connect.
+6. Paste the client ID, client secret, and API key into Ckourse Linux's Settings, then click Connect.
 
 OAuth completes through a one-shot `http://127.0.0.1` listener on a random port, so no redirect URI needs to be registered ahead of time.
 
@@ -150,7 +154,7 @@ OAuth completes through a one-shot `http://127.0.0.1` listener on a random port,
 ## Project Structure
 
 ```
-ckourse/
+ckourse-linux/
 ├── src/                      # React frontend
 │   ├── components/
 │   │   ├── app-shell/        # Layout, sidebar, navigation
@@ -186,7 +190,7 @@ ckourse/
 
 ## Contributing
 
-Ckourse is in early development. Contributions, issues, and feature requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for the development workflow, code conventions, and commit style, and the [Code of Conduct](CODE_OF_CONDUCT.md) for community expectations.
+Ckourse Linux is a community fork in early development. Contributions, issues, and feature requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for the development workflow, code conventions, and commit style, and the [Code of Conduct](CODE_OF_CONDUCT.md) for community expectations. For upstream Ckourse, see [redaantar/ckourse](https://github.com/redaantar/ckourse).
 
 To report a security vulnerability, see [SECURITY.md](SECURITY.md).
 
@@ -200,4 +204,4 @@ MIT — free to use, modify, and distribute.
 
 ## Links
 
-- 🐛 Issues: [github.com/redaantar/ckourse/issues](https://github.com/redaantar/ckourse/issues)
+- 🐛 Issues: [github.com/l0udsil3nc3/ckourse-linux/issues](https://github.com/l0udsil3nc3/ckourse-linux/issues)

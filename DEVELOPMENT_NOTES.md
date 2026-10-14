@@ -1,18 +1,21 @@
 # Development Notes: Linux Playback and Cross-Course Data
 
-These notes summarize the changes in this fork relative to upstream Ckourse
-v1.2.0, along with verification status and known follow-up work.
+These notes summarize the changes in this Linux-focused fork relative to
+upstream Ckourse v1.2.0, along with verification status and follow-up work.
 
 ## Repository state
 
 - Upstream base: `92cbe59` (`v1.2.0`, `main`).
 - Working branch: `wip/appimage-media-framework`.
-- Current source commit: `05079c8` (`Improve Linux packaging and sync shared video progress`).
+- Progress/sync baseline: `05079c8` (`Improve Linux packaging and sync shared video progress`), before the fork branding changes.
 - The branch also retains the playback checkpoint `4c1a7bd`, the intermediate
   AppImage diagnosis checkpoint `67ac24c`, and the AppImage packaging fix
   `a7acadc`.
 - The offline AppImage-runtime cache experiment was reverted and is not part of
   the current source tree.
+- The app display name and npm project name are branded `Ckourse Linux`; the
+  upstream icon artwork is retained, with a Linux badge added to the sidebar
+  wordmark. The bundle identifier remains upstream-compatible.
 
 ## Changes from upstream
 
@@ -116,6 +119,9 @@ The main implementation is in `src-tauri/src/db.rs`,
   initial linuxdeploy pass; the post-processing script handles the observed
   generated-AppDir workflow. Updater artifacts are not produced without the
   private signing key.
+- Before distributing independent releases, configure a fork-owned updater
+  endpoint and signing key. The current updater endpoint still points to
+  upstream Ckourse.
 
 ## Verification recorded
 

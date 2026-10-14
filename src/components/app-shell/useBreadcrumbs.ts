@@ -34,5 +34,5 @@ export function useBreadcrumbs(): BreadcrumbItem[] {
   }
 
   // Top-level pages
-  return [{ label: routeTitles[pathname] ?? "Ckourse" }];
+  return [{ label: routeTitles[pathname] ?? "Ckourse Linux" }];
 }
