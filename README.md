@@ -4,7 +4,7 @@
 
 Ckourse Linux is a community fork of [Ckourse](https://github.com/redaantar/ckourse), an open-source desktop application for watching and organizing downloaded courses. This fork focuses on Linux streaming playback, AppImage packaging, and shared progress and notes for videos reused across courses.
 
-> **Fork status:** This project retains the upstream bundle identifier and updater configuration for compatibility. Do not install it alongside upstream Ckourse or distribute independent releases until a separate application identifier and updater endpoint/signing key are configured.
+> **Fork status:** This project retains the upstream bundle identifier, so do not install it alongside upstream Ckourse. The updater endpoint points to this fork, but signed automatic updates are unavailable until a fork-owned signing key is configured; releases are manual downloads for now.
 
 ---
 

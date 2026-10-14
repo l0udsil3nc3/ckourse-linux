@@ -119,9 +119,11 @@ The main implementation is in `src-tauri/src/db.rs`,
   initial linuxdeploy pass; the post-processing script handles the observed
   generated-AppDir workflow. Updater artifacts are not produced without the
   private signing key.
-- Before distributing independent releases, configure a fork-owned updater
-  endpoint and signing key. The current updater endpoint still points to
-  upstream Ckourse.
+- The updater endpoint points to this fork. Its public key still needs to be
+  replaced with the public half of a fork-owned signing key before publishing
+  signed updater artifacts; releases are manual downloads until then.
+- The bundle identifier remains `com.ckourse.app`; installing this fork
+  alongside upstream Ckourse can conflict and is not supported.
 
 ## Verification recorded
 
