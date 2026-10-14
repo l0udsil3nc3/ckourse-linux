@@ -53,7 +53,11 @@ fn build_config(
         base_path: {
             let p = input.base_path.clone().unwrap_or_default();
             let p = p.trim();
-            if p.is_empty() { "/".to_string() } else { p.to_string() }
+            if p.is_empty() {
+                "/".to_string()
+            } else {
+                p.to_string()
+            }
         },
         bucket: input.bucket.clone().unwrap_or_default().trim().to_string(),
         region: input.region.clone().unwrap_or_default().trim().to_string(),
@@ -77,10 +81,7 @@ fn merge_secrets(input: &ServerInput, existing: ServerSecrets) -> ServerSecrets 
         private_key: take(&input.private_key, existing.private_key),
         // A passphrase only means anything alongside a key, and users do clear
         // it deliberately, so an explicit empty string wins here.
-        passphrase: input
-            .passphrase
-            .clone()
-            .unwrap_or(existing.passphrase),
+        passphrase: input.passphrase.clone().unwrap_or(existing.passphrase),
     }
 }
 
@@ -101,7 +102,11 @@ pub async fn save_server(
         .clone()
         .unwrap_or_else(|| uuid::Uuid::new_v4().to_string());
 
-    let existing = if is_new { None } else { remote::get_config(&id).ok() };
+    let existing = if is_new {
+        None
+    } else {
+        remote::get_config(&id).ok()
+    };
     let config = build_config(&input, id.clone(), existing.as_ref())?;
 
     let secrets = merge_secrets(&input, remote::load_secrets(&id).unwrap_or_default());
@@ -150,10 +155,7 @@ pub fn count_server_courses(state: tauri::State<'_, DbState>, id: String) -> Res
 #[tauri::command]
 pub async fn test_server(input: ServerInput) -> Result<String, String> {
     let id = input.id.clone().unwrap_or_else(|| "test".to_string());
-    let existing = input
-        .id
-        .as_ref()
-        .and_then(|i| remote::get_config(i).ok());
+    let existing = input.id.as_ref().and_then(|i| remote::get_config(i).ok());
     let config = build_config(&input, id.clone(), existing.as_ref())?;
     let secrets = merge_secrets(&input, remote::load_secrets(&id).unwrap_or_default());
 
@@ -167,13 +169,20 @@ pub async fn test_server(input: ServerInput) -> Result<String, String> {
         folders,
         if folders == 1 { "" } else { "s" },
         entries.len() - folders,
-        if entries.len() - folders == 1 { "" } else { "s" },
+        if entries.len() - folders == 1 {
+            ""
+        } else {
+            "s"
+        },
     ))
 }
 
 /// One level of the remote filesystem, for the folder browser.
 #[tauri::command]
-pub async fn browse_server(server_id: String, path: Option<String>) -> Result<BrowseResult, String> {
+pub async fn browse_server(
+    server_id: String,
+    path: Option<String>,
+) -> Result<BrowseResult, String> {
     let config = remote::get_config(&server_id)?;
     let path = path.unwrap_or_else(|| config.base_path.clone());
     let entries = remote::browse(&server_id, &path).await?;

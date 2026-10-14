@@ -283,7 +283,9 @@ pub fn load_secrets(id: &str) -> Result<ServerSecrets, String> {
 pub fn delete_secrets(id: &str) -> Result<(), String> {
     match keychain(id)?.delete_credential() {
         Ok(()) | Err(keyring::Error::NoEntry) => Ok(()),
-        Err(e) => Err(format!("Couldn't remove credentials from the keychain: {e}")),
+        Err(e) => Err(format!(
+            "Couldn't remove credentials from the keychain: {e}"
+        )),
     }
 }
 
@@ -381,8 +383,9 @@ fn list_recursive<'a>(
     path: String,
     depth: usize,
     budget: &'a mut usize,
-) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<Vec<SourceEntry>, String>> + Send + 'a>>
-{
+) -> std::pin::Pin<
+    Box<dyn std::future::Future<Output = Result<Vec<SourceEntry>, String>> + Send + 'a>,
+> {
     Box::pin(async move {
         if depth >= MAX_DEPTH {
             return Ok(Vec::new());
@@ -430,7 +433,8 @@ fn list_recursive<'a>(
 
 /// Read a whole remote file, addressed by its stored `srv:` URI — subtitles.
 pub async fn read_uri(uri: &str) -> Result<Vec<u8>, String> {
-    let (server_id, path) = split_uri(uri).ok_or_else(|| format!("Malformed remote path: {uri}"))?;
+    let (server_id, path) =
+        split_uri(uri).ok_or_else(|| format!("Malformed remote path: {uri}"))?;
     with_backend(&server_id, move |b| {
         let path = path.clone();
         async move { b.read_all(&path).await }

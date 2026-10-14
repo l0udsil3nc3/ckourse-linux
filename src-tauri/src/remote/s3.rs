@@ -227,7 +227,10 @@ impl RemoteBackend for S3Backend {
             .await
             .map_err(|e| format!("Couldn't reach the storage endpoint: {e}"))?;
         if !resp.status().is_success() {
-            return Err(format!("The endpoint returned {} for {key}.", resp.status()));
+            return Err(format!(
+                "The endpoint returned {} for {key}.",
+                resp.status()
+            ));
         }
         resp.headers()
             .get(header::CONTENT_LENGTH)

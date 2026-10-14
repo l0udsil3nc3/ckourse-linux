@@ -1,6 +1,6 @@
+use crate::parser::find_bundled_bin;
 use std::fs;
 use std::path::Path;
-use crate::parser::find_bundled_bin;
 
 /// Read a subtitle file and return its contents as WebVTT.
 /// Supports: .vtt (passthrough), .srt (convert), .ass/.ssa (basic convert).
@@ -74,10 +74,14 @@ fn extract_embedded_subtitle(video_path: &str, stream_index: u64) -> Result<Stri
 
     let mut cmd = std::process::Command::new(&ffmpeg_bin);
     cmd.args([
-        "-v", "quiet",
-        "-i", video_path,
-        "-map", &format!("0:{}", stream_index),
-        "-f", "webvtt",
+        "-v",
+        "quiet",
+        "-i",
+        video_path,
+        "-map",
+        &format!("0:{}", stream_index),
+        "-f",
+        "webvtt",
         "pipe:1",
     ]);
 
@@ -87,15 +91,16 @@ fn extract_embedded_subtitle(video_path: &str, stream_index: u64) -> Result<Stri
         cmd.creation_flags(0x08000000);
     }
 
-    let output = cmd.output().map_err(|e| format!("Failed to run ffmpeg: {e}"))?;
+    let output = cmd
+        .output()
+        .map_err(|e| format!("Failed to run ffmpeg: {e}"))?;
 
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
         return Err(format!("ffmpeg failed: {stderr}"));
     }
 
-    String::from_utf8(output.stdout)
-        .map_err(|e| format!("ffmpeg output is not valid UTF-8: {e}"))
+    String::from_utf8(output.stdout).map_err(|e| format!("ffmpeg output is not valid UTF-8: {e}"))
 }
 
 /// Convert SRT to WebVTT.
@@ -159,9 +164,7 @@ fn ass_to_vtt(ass: &str) -> String {
 
         let start = ass_time_to_vtt(parts[1].trim());
         let end = ass_time_to_vtt(parts[2].trim());
-        let text = parts[9]
-            .replace("\\N", "\n")
-            .replace("\\n", "\n");
+        let text = parts[9].replace("\\N", "\n").replace("\\n", "\n");
 
         // Strip ASS override tags like {\b1}, {\an8}, etc.
         let clean = strip_ass_tags(&text);

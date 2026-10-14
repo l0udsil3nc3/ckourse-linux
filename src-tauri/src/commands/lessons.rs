@@ -71,10 +71,7 @@ pub fn get_all_favorites(
 }
 
 #[tauri::command]
-pub fn toggle_favorite(
-    state: tauri::State<'_, DbState>,
-    lesson_id: i64,
-) -> Result<bool, String> {
+pub fn toggle_favorite(state: tauri::State<'_, DbState>, lesson_id: i64) -> Result<bool, String> {
     let conn = state.conn.lock().map_err(|e| e.to_string())?;
     db::toggle_favorite(&conn, lesson_id).map_err(|e| e.to_string())
 }

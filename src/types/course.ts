@@ -56,6 +56,7 @@ export interface Note {
   content: string;
   createdAt: string;
   updatedAt: string;
+  videoPath: string;
 }
 
 export interface Subtitle {

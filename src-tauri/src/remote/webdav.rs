@@ -98,7 +98,11 @@ impl WebdavBackend {
         let base_path = self
             .base
             .find("://")
-            .and_then(|i| self.base[i + 3..].find('/').map(|s| &self.base[i + 3 + s..]))
+            .and_then(|i| {
+                self.base[i + 3..]
+                    .find('/')
+                    .map(|s| &self.base[i + 3 + s..])
+            })
             .unwrap_or("");
 
         let rel = path_part.strip_prefix(base_path).unwrap_or(&path_part);

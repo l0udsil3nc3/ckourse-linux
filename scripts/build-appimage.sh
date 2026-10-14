@@ -22,7 +22,7 @@ echo "=== Building Ckourse ==="
 rm -rf -- "$APPDIR"
 
 set +e
-npm run tauri -- build 2>&1 | tee "$BUILD_LOG"
+npm run tauri:cli -- build "$@" 2>&1 | tee "$BUILD_LOG"
 BUILD_STATUS=${PIPESTATUS[0]}
 set -e
 

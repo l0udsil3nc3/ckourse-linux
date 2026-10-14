@@ -81,6 +81,7 @@ pub struct Note {
     pub content: String,
     pub created_at: String,
     pub updated_at: String,
+    pub video_path: String,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -253,14 +254,12 @@ pub fn init_db(app_data_dir: &Path) -> SqlResult<Connection> {
     )?;
 
     // Migrations for existing databases
-    let _ = conn.execute_batch(
-        "ALTER TABLE lessons ADD COLUMN last_position REAL NOT NULL DEFAULT 0;",
-    );
+    let _ =
+        conn.execute_batch("ALTER TABLE lessons ADD COLUMN last_position REAL NOT NULL DEFAULT 0;");
 
     // Source type (local folder vs Google Drive) for existing databases
-    let _ = conn.execute_batch(
-        "ALTER TABLE courses ADD COLUMN source_type TEXT NOT NULL DEFAULT 'local';",
-    );
+    let _ = conn
+        .execute_batch("ALTER TABLE courses ADD COLUMN source_type TEXT NOT NULL DEFAULT 'local';");
 
     // Saved servers (SFTP / WebDAV / S3) for existing databases. Secrets live in
     // the OS keychain keyed by `id`, never in this table.
@@ -291,9 +290,7 @@ pub fn init_db(app_data_dir: &Path) -> SqlResult<Connection> {
     );
 
     // Activity log table migration for existing databases
-    let _ = conn.execute_batch(
-        "CREATE TABLE IF NOT EXISTS activity_log (date TEXT PRIMARY KEY);",
-    );
+    let _ = conn.execute_batch("CREATE TABLE IF NOT EXISTS activity_log (date TEXT PRIMARY KEY);");
 
     // Seed activity_log from existing last_watched dates
     let _ = conn.execute_batch(
@@ -396,8 +393,14 @@ fn save_parsed_course_inner(
 
         for lesson in &section.lessons {
             conn.execute(
-                "INSERT INTO lessons (section_id, title, video_path, sort_order, completed, is_last_watched, duration)
-                 VALUES (?1, ?2, ?3, ?4, 0, 0, ?5)",
+                "INSERT INTO lessons (section_id, title, video_path, sort_order, completed, is_last_watched, duration, last_position)
+                 VALUES (
+                    ?1, ?2, ?3, ?4,
+                    COALESCE((SELECT MAX(completed) FROM lessons WHERE video_path = ?3), 0),
+                    0,
+                    COALESCE((SELECT MAX(duration) FROM lessons WHERE video_path = ?3 AND duration > 0), ?5),
+                    COALESCE((SELECT MAX(last_position) FROM lessons WHERE video_path = ?3), 0)
+                 )",
                 params![section_id, lesson.title, lesson.video_path, lesson.order, (lesson.duration_secs / 60) as i64],
             )?;
             let lesson_id = conn.last_insert_rowid();
@@ -481,9 +484,8 @@ pub fn get_course_detail(conn: &Connection, course_id: i64) -> SqlResult<Option<
     }
 
     // Get sections
-    let mut section_stmt = conn.prepare(
-        "SELECT id, title FROM sections WHERE course_id = ?1 ORDER BY sort_order",
-    )?;
+    let mut section_stmt =
+        conn.prepare("SELECT id, title FROM sections WHERE course_id = ?1 ORDER BY sort_order")?;
 
     let mut lesson_stmt = conn.prepare(
         "SELECT l.id, l.title, l.video_path, l.duration, l.completed, l.is_last_watched, l.last_position,
@@ -595,24 +597,30 @@ pub fn get_course_by_id(conn: &Connection, course_id: i64) -> SqlResult<Option<C
 }
 
 pub fn toggle_lesson_completed(conn: &Connection, lesson_id: i64) -> SqlResult<bool> {
-    let current: i32 = conn.query_row(
-        "SELECT completed FROM lessons WHERE id = ?1",
+    let (video_path, current): (String, i32) = conn.query_row(
+        "SELECT video_path, completed FROM lessons WHERE id = ?1",
         params![lesson_id],
-        |row| row.get(0),
+        |row| Ok((row.get(0)?, row.get(1)?)),
     )?;
 
     let new_val = if current == 0 { 1 } else { 0 };
+    // Lesson rows are course-specific, but completion belongs to the video
+    // file. Update every row that references the same path so all course
+    // entries stay in sync.
     conn.execute(
-        "UPDATE lessons SET completed = ?1 WHERE id = ?2",
-        params![new_val, lesson_id],
+        "UPDATE lessons SET completed = ?1 WHERE video_path = ?2",
+        params![new_val, video_path],
     )?;
 
-    // Update course updated_at
+    let now = chrono_now();
     conn.execute(
-        "UPDATE courses SET updated_at = ?1 WHERE id = (
-            SELECT s.course_id FROM sections s JOIN lessons l ON l.section_id = s.id WHERE l.id = ?2
+        "UPDATE courses SET updated_at = ?1 WHERE id IN (
+            SELECT DISTINCT s.course_id
+            FROM sections s
+            JOIN lessons l ON l.section_id = s.id
+            WHERE l.video_path = ?2
         )",
-        params![chrono_now(), lesson_id],
+        params![now, video_path],
     )?;
 
     record_activity(conn);
@@ -661,19 +669,96 @@ pub fn update_course(
 }
 
 pub fn reset_course_progress(conn: &Connection, course_id: i64) -> SqlResult<()> {
+    let now = chrono_now();
+
+    // Reset completion for the selected course's videos everywhere they are
+    // referenced, preserving the invariant that a shared video has one state.
     conn.execute(
-        "UPDATE lessons SET completed = 0, is_last_watched = 0
+        "UPDATE lessons SET completed = 0
+         WHERE video_path IN (
+             SELECT l.video_path
+             FROM lessons l
+             JOIN sections s ON s.id = l.section_id
+             WHERE s.course_id = ?1
+         )",
+        params![course_id],
+    )?;
+
+    // Last-watched position remains course-specific, unlike completion.
+    conn.execute(
+        "UPDATE lessons SET is_last_watched = 0
          WHERE section_id IN (SELECT id FROM sections WHERE course_id = ?1)",
         params![course_id],
     )?;
+
     conn.execute(
         "UPDATE courses SET last_watched = NULL, updated_at = ?1 WHERE id = ?2",
-        params![chrono_now(), course_id],
+        params![now, course_id],
     )?;
+
+    // Other courses sharing any of these video paths also had their progress
+    // changed, so refresh their updated_at timestamps as well.
+    conn.execute(
+        "UPDATE courses SET updated_at = ?1 WHERE id IN (
+            SELECT DISTINCT s.course_id
+            FROM sections s
+            JOIN lessons l ON l.section_id = s.id
+            WHERE l.video_path IN (
+                SELECT l2.video_path
+                FROM lessons l2
+                JOIN sections s2 ON s2.id = l2.section_id
+                WHERE s2.course_id = ?2
+            )
+        )",
+        params![now, course_id],
+    )?;
+
     Ok(())
 }
 
 pub fn delete_course(conn: &Connection, course_id: i64) -> SqlResult<()> {
+    // Rehome notes for shared videos before the course's ON DELETE CASCADE runs.
+    // Keep a valid remaining course/lesson association for each surviving note.
+    conn.execute(
+        "UPDATE notes
+         SET course_id = (
+                 SELECT alternate_section.course_id
+                 FROM lessons AS source_lesson
+                 JOIN sections AS source_section ON source_section.id = source_lesson.section_id
+                 JOIN lessons AS alternate_lesson ON alternate_lesson.video_path = source_lesson.video_path
+                 JOIN sections AS alternate_section ON alternate_section.id = alternate_lesson.section_id
+                 WHERE source_lesson.id = notes.lesson_id
+                   AND source_section.course_id = ?1
+                   AND alternate_section.course_id != ?1
+                 ORDER BY alternate_section.course_id, alternate_lesson.id
+                 LIMIT 1
+             ),
+             lesson_id = (
+                 SELECT alternate_lesson.id
+                 FROM lessons AS source_lesson
+                 JOIN sections AS source_section ON source_section.id = source_lesson.section_id
+                 JOIN lessons AS alternate_lesson ON alternate_lesson.video_path = source_lesson.video_path
+                 JOIN sections AS alternate_section ON alternate_section.id = alternate_lesson.section_id
+                 WHERE source_lesson.id = notes.lesson_id
+                   AND source_section.course_id = ?1
+                   AND alternate_section.course_id != ?1
+                 ORDER BY alternate_section.course_id, alternate_lesson.id
+                 LIMIT 1
+             )
+         WHERE notes.course_id = ?1
+           AND EXISTS (
+                 SELECT 1
+                 FROM lessons AS source_lesson
+                 JOIN sections AS source_section ON source_section.id = source_lesson.section_id
+                 JOIN lessons AS alternate_lesson ON alternate_lesson.video_path = source_lesson.video_path
+                 JOIN sections AS alternate_section ON alternate_section.id = alternate_lesson.section_id
+                 WHERE source_lesson.id = notes.lesson_id
+                   AND source_section.course_id = ?1
+                   AND alternate_section.course_id != ?1
+             )",
+        params![course_id],
+    )?;
+
     conn.execute("DELETE FROM courses WHERE id = ?1", params![course_id])?;
     Ok(())
 }
@@ -710,8 +795,19 @@ pub fn get_all_notes(conn: &Connection) -> SqlResult<Vec<NoteWithCourse>> {
 
 pub fn get_course_notes(conn: &Connection, course_id: i64) -> SqlResult<Vec<Note>> {
     let mut stmt = conn.prepare(
-        "SELECT id, course_id, lesson_id, lesson_title, content, created_at, updated_at
-         FROM notes WHERE course_id = ?1 ORDER BY created_at DESC",
+        "SELECT DISTINCT n.id, n.course_id, n.lesson_id, n.lesson_title, n.content,
+                n.created_at, n.updated_at, note_lesson.video_path
+         FROM notes AS n
+         JOIN lessons AS note_lesson ON note_lesson.id = n.lesson_id
+         JOIN sections AS note_section ON note_section.id = note_lesson.section_id
+         WHERE n.course_id = ?1
+            OR note_lesson.video_path IN (
+                SELECT course_lesson.video_path
+                FROM lessons AS course_lesson
+                JOIN sections AS course_section ON course_section.id = course_lesson.section_id
+                WHERE course_section.course_id = ?1
+            )
+         ORDER BY n.created_at DESC",
     )?;
 
     let notes = stmt
@@ -724,6 +820,7 @@ pub fn get_course_notes(conn: &Connection, course_id: i64) -> SqlResult<Vec<Note
                 content: row.get(4)?,
                 created_at: row.get(5)?,
                 updated_at: row.get(6)?,
+                video_path: row.get(7)?,
             })
         })?
         .collect::<SqlResult<Vec<_>>>()?;
@@ -738,6 +835,11 @@ pub fn add_note(
     lesson_title: &str,
     content: &str,
 ) -> SqlResult<Note> {
+    let video_path: String = conn.query_row(
+        "SELECT video_path FROM lessons WHERE id = ?1",
+        params![lesson_id],
+        |row| row.get(0),
+    )?;
     let now = chrono_now();
     conn.execute(
         "INSERT INTO notes (course_id, lesson_id, lesson_title, content, created_at, updated_at)
@@ -754,6 +856,7 @@ pub fn add_note(
         content: content.to_string(),
         created_at: now.clone(),
         updated_at: now,
+        video_path,
     })
 }
 
@@ -772,16 +875,20 @@ pub fn delete_note(conn: &Connection, note_id: i64) -> SqlResult<()> {
 }
 
 pub fn save_lesson_position(conn: &Connection, lesson_id: i64, position: f64) -> SqlResult<()> {
+    // Duplicate course entries can point to the same underlying video. Keep
+    // their resume position in sync by using video_path as the shared identity.
     conn.execute(
-        "UPDATE lessons SET last_position = ?1 WHERE id = ?2",
+        "UPDATE lessons SET last_position = ?1 WHERE video_path = (SELECT video_path FROM lessons WHERE id = ?2)",
         params![position, lesson_id],
     )?;
     Ok(())
 }
 
 pub fn update_lesson_duration(conn: &Connection, lesson_id: i64, duration: i64) -> SqlResult<()> {
+    // Duration is a property of the video, not of a course entry. Share it
+    // with every lesson row that references the same exact video_path.
     conn.execute(
-        "UPDATE lessons SET duration = ?1 WHERE id = ?2 AND duration != ?1",
+        "UPDATE lessons SET duration = ?1 WHERE video_path = (SELECT video_path FROM lessons WHERE id = ?2) AND duration != ?1",
         params![duration, lesson_id],
     )?;
     Ok(())
@@ -928,9 +1035,8 @@ pub fn toggle_favorite(conn: &Connection, lesson_id: i64) -> SqlResult<bool> {
 // --- Subtitles ---
 
 pub fn get_lesson_subtitles(conn: &Connection, lesson_id: i64) -> SqlResult<Vec<Subtitle>> {
-    let mut stmt = conn.prepare(
-        "SELECT id, lesson_id, path, language FROM subtitles WHERE lesson_id = ?1",
-    )?;
+    let mut stmt =
+        conn.prepare("SELECT id, lesson_id, path, language FROM subtitles WHERE lesson_id = ?1")?;
 
     let subs = stmt
         .query_map(params![lesson_id], |row| {
@@ -1017,9 +1123,7 @@ pub fn get_dashboard_stats(conn: &Connection) -> SqlResult<DashboardStats> {
     let mut streak: i64 = 0;
 
     // Get all activity dates in descending order
-    let mut stmt = conn.prepare(
-        "SELECT date FROM activity_log ORDER BY date DESC",
-    )?;
+    let mut stmt = conn.prepare("SELECT date FROM activity_log ORDER BY date DESC")?;
     let dates: Vec<String> = stmt
         .query_map([], |row| row.get(0))?
         .filter_map(|r| r.ok())
@@ -1044,9 +1148,8 @@ pub fn get_dashboard_stats(conn: &Connection) -> SqlResult<DashboardStats> {
     // Week activity: fetch all active dates in the last 7 days in one query
     let today_days = date_to_days(today);
     let week_start = days_to_date(today_days - 6);
-    let mut week_stmt = conn.prepare(
-        "SELECT date FROM activity_log WHERE date >= ?1 AND date <= ?2",
-    )?;
+    let mut week_stmt =
+        conn.prepare("SELECT date FROM activity_log WHERE date >= ?1 AND date <= ?2")?;
     let active_dates: std::collections::HashSet<String> = week_stmt
         .query_map(params![week_start, today], |row| row.get(0))?
         .filter_map(|r| r.ok())
@@ -1143,9 +1246,7 @@ pub fn get_progress_data(conn: &Connection) -> SqlResult<ProgressData> {
     // Activity history (all dates)
     let mut stmt = conn.prepare("SELECT date FROM activity_log ORDER BY date")?;
     let activity_days: Vec<ActivityDay> = stmt
-        .query_map([], |row| {
-            Ok(ActivityDay { date: row.get(0)? })
-        })?
+        .query_map([], |row| Ok(ActivityDay { date: row.get(0)? }))?
         .collect::<SqlResult<Vec<_>>>()?;
 
     // Category breakdown — single query using GROUP BY
@@ -1161,7 +1262,9 @@ pub fn get_progress_data(conn: &Connection) -> SqlResult<ProgressData> {
          ORDER BY COUNT(DISTINCT c.id) DESC",
     )?;
     let cat_rows: Vec<(String, i64, i64, i64)> = cat_stmt
-        .query_map([], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?)))?
+        .query_map([], |row| {
+            Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?))
+        })?
         .collect::<SqlResult<Vec<_>>>()?;
 
     // Count completed courses per category in one additional query
@@ -1172,7 +1275,9 @@ pub fn get_progress_data(conn: &Connection) -> SqlResult<ProgressData> {
          GROUP BY c.category",
     )?;
     let completed_per_cat: std::collections::HashMap<String, i64> = comp_stmt
-        .query_map([], |row| Ok((row.get::<_, String>(0)?, row.get::<_, i64>(1)?)))?
+        .query_map([], |row| {
+            Ok((row.get::<_, String>(0)?, row.get::<_, i64>(1)?))
+        })?
         .filter_map(|r| r.ok())
         .collect();
 
@@ -1418,18 +1523,33 @@ pub struct LibraryStats {
 }
 
 pub fn get_library_stats(conn: &Connection, db_path: &str) -> SqlResult<LibraryStats> {
-    let (total_courses, total_sections, total_lessons, total_notes, total_bookmarks, total_favorites): (i64, i64, i64, i64, i64, i64) =
-        conn.query_row(
-            "SELECT
+    let (
+        total_courses,
+        total_sections,
+        total_lessons,
+        total_notes,
+        total_bookmarks,
+        total_favorites,
+    ): (i64, i64, i64, i64, i64, i64) = conn.query_row(
+        "SELECT
                 (SELECT COUNT(*) FROM courses),
                 (SELECT COUNT(*) FROM sections),
                 (SELECT COUNT(*) FROM lessons),
                 (SELECT COUNT(*) FROM notes),
                 (SELECT COUNT(*) FROM bookmarks),
                 (SELECT COUNT(*) FROM favorites)",
-            [],
-            |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?, r.get(4)?, r.get(5)?)),
-        )?;
+        [],
+        |r| {
+            Ok((
+                r.get(0)?,
+                r.get(1)?,
+                r.get(2)?,
+                r.get(3)?,
+                r.get(4)?,
+                r.get(5)?,
+            ))
+        },
+    )?;
     Ok(LibraryStats {
         total_courses,
         total_sections,
@@ -1507,8 +1627,7 @@ fn server_from_row(row: &rusqlite::Row<'_>) -> SqlResult<crate::remote::ServerCo
         name: row.get(1)?,
         // A row with an unrecognised kind would be from a newer version of the
         // app; fall back rather than failing the whole listing.
-        kind: crate::remote::ServerKind::parse(&kind)
-            .unwrap_or(crate::remote::ServerKind::Sftp),
+        kind: crate::remote::ServerKind::parse(&kind).unwrap_or(crate::remote::ServerKind::Sftp),
         host: row.get(3)?,
         port: row.get::<_, i64>(4)? as u16,
         username: row.get(5)?,

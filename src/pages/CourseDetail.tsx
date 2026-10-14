@@ -250,7 +250,9 @@ function CourseDetailInner({
   const [activeTab, setActiveTab] = useState<"resources" | "notes">("notes");
   const [notes, setNotes] = useState<Note[]>([]);
   const lessonNotes = activeLesson
-    ? notes.filter((n) => n.lessonId === activeLesson.id)
+    ? notes
+        .filter((note) => note.videoPath === activeLesson.videoPath)
+        .map((note) => ({ ...note, lessonId: activeLesson.id }))
     : [];
   const [editingNoteId, setEditingNoteId] = useState<number | null>(null);
   const [showEditor, setShowEditor] = useState(false);

@@ -21,10 +21,7 @@ fn configure_stream_playback() {
     let mut candidates: Vec<PathBuf> = Vec::new();
 
     #[cfg(debug_assertions)]
-    candidates.push(
-        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("resources/gstreamer")
-    );
+    candidates.push(PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("resources/gstreamer"));
 
     if let Some(appdir) = std::env::var_os("APPDIR") {
         let base = PathBuf::from(appdir).join("usr/lib").join(app_name);
@@ -72,10 +69,7 @@ fn configure_stream_playback() {
     }
 
     unsafe {
-        std::env::set_var(
-            "WEBKIT_GST_ALLOWED_URI_PROTOCOLS",
-            schemes.join(","),
-        );
+        std::env::set_var("WEBKIT_GST_ALLOWED_URI_PROTOCOLS", schemes.join(","));
 
         if !paths.is_empty() {
             if let Ok(joined) = std::env::join_paths(&paths) {

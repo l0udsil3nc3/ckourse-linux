@@ -26,7 +26,10 @@ pub fn get_courses(state: tauri::State<'_, DbState>) -> Result<Vec<db::Course>, 
 }
 
 #[tauri::command]
-pub fn get_course(state: tauri::State<'_, DbState>, course_id: i64) -> Result<Option<db::Course>, String> {
+pub fn get_course(
+    state: tauri::State<'_, DbState>,
+    course_id: i64,
+) -> Result<Option<db::Course>, String> {
     let conn = state.conn.lock().map_err(|e| e.to_string())?;
     db::get_course_by_id(&conn, course_id).map_err(|e| e.to_string())
 }
@@ -55,7 +58,10 @@ pub fn update_course(
 }
 
 #[tauri::command]
-pub fn reset_course_progress(state: tauri::State<'_, DbState>, course_id: i64) -> Result<(), String> {
+pub fn reset_course_progress(
+    state: tauri::State<'_, DbState>,
+    course_id: i64,
+) -> Result<(), String> {
     let conn = state.conn.lock().map_err(|e| e.to_string())?;
     db::reset_course_progress(&conn, course_id).map_err(|e| e.to_string())
 }
@@ -67,34 +73,25 @@ pub fn delete_course(state: tauri::State<'_, DbState>, course_id: i64) -> Result
 }
 
 #[tauri::command]
-pub fn get_bookmarked_courses(
-    state: tauri::State<'_, DbState>,
-) -> Result<Vec<db::Course>, String> {
+pub fn get_bookmarked_courses(state: tauri::State<'_, DbState>) -> Result<Vec<db::Course>, String> {
     let conn = state.conn.lock().map_err(|e| e.to_string())?;
     db::get_bookmarked_courses(&conn).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-pub fn toggle_bookmark(
-    state: tauri::State<'_, DbState>,
-    course_id: i64,
-) -> Result<bool, String> {
+pub fn toggle_bookmark(state: tauri::State<'_, DbState>, course_id: i64) -> Result<bool, String> {
     let conn = state.conn.lock().map_err(|e| e.to_string())?;
     db::toggle_bookmark(&conn, course_id).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-pub fn get_dashboard_stats(
-    state: tauri::State<'_, DbState>,
-) -> Result<db::DashboardStats, String> {
+pub fn get_dashboard_stats(state: tauri::State<'_, DbState>) -> Result<db::DashboardStats, String> {
     let conn = state.conn.lock().map_err(|e| e.to_string())?;
     db::get_dashboard_stats(&conn).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-pub fn get_progress_data(
-    state: tauri::State<'_, DbState>,
-) -> Result<db::ProgressData, String> {
+pub fn get_progress_data(state: tauri::State<'_, DbState>) -> Result<db::ProgressData, String> {
     let conn = state.conn.lock().map_err(|e| e.to_string())?;
     db::get_progress_data(&conn).map_err(|e| e.to_string())
 }
@@ -122,7 +119,10 @@ pub fn add_custom_category(state: tauri::State<'_, DbState>, name: String) -> Re
 }
 
 #[tauri::command]
-pub fn delete_custom_category(state: tauri::State<'_, DbState>, name: String) -> Result<(), String> {
+pub fn delete_custom_category(
+    state: tauri::State<'_, DbState>,
+    name: String,
+) -> Result<(), String> {
     let conn = state.conn.lock().map_err(|e| e.to_string())?;
     db::delete_custom_category(&conn, &name).map_err(|e| e.to_string())
 }

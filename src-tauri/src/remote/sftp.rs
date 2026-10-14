@@ -114,10 +114,7 @@ pub async fn connect(
         .map_err(|e| format!("SFTP handshake failed: {e}"))?;
 
     Ok((
-        Arc::new(SftpBackend {
-            session,
-            _ssh: ssh,
-        }) as Arc<dyn RemoteBackend>,
+        Arc::new(SftpBackend { session, _ssh: ssh }) as Arc<dyn RemoteBackend>,
         fingerprint,
     ))
 }

@@ -114,9 +114,7 @@ impl Engine {
                 .unwrap_or_else(|_| status_only(StatusCode::INTERNAL_SERVER_ERROR));
         }
         let open_ended = end_opt.is_none();
-        let end = end_opt
-            .unwrap_or(start + OPEN_ENDED_CAP - 1)
-            .min(total - 1);
+        let end = end_opt.unwrap_or(start + OPEN_ENDED_CAP - 1).min(total - 1);
 
         // Assemble [start..=end]. An explicit-end request is satisfied in full
         // (the media stack uses those for small probes and expects every byte);
@@ -191,7 +189,10 @@ impl Engine {
         }
 
         let (total, content_type) = meta.await?;
-        eprintln!("[{}] meta {key} total={total} type={content_type}", self.label);
+        eprintln!(
+            "[{}] meta {key} total={total} type={content_type}",
+            self.label
+        );
 
         let mut guard = self.state.lock().map_err(|e| e.to_string())?;
         // A concurrent request may have initialised the same file meanwhile.

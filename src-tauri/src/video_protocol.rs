@@ -20,6 +20,14 @@ pub fn handle(
 }
 
 fn serve(request: &Request<Vec<u8>>) -> Response<Vec<u8>> {
+    eprintln!(
+        "[stream-seek-debug] method={} uri={} range={:?}",
+        request.method(),
+        request.uri(),
+        request.headers()
+            .get(header::RANGE)
+            .and_then(|v| v.to_str().ok())
+    );
     let path = match decode_path(request) {
         Some(p) => p,
         None => return status_only(StatusCode::BAD_REQUEST),

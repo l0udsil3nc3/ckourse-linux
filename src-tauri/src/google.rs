@@ -169,7 +169,9 @@ pub async fn pick_folder(app: AppHandle) -> Result<PickedFolder, String> {
 
     tokio::time::timeout(
         Duration::from_secs(AUTH_TIMEOUT_SECS),
-        tauri::async_runtime::spawn_blocking(move || serve_picker(listener, &token, &api_key, &app_id)),
+        tauri::async_runtime::spawn_blocking(move || {
+            serve_picker(listener, &token, &api_key, &app_id)
+        }),
     )
     .await
     .map_err(|_| "Timed out waiting for folder selection".to_string())?
@@ -221,13 +223,26 @@ fn serve_picker(
                     }
                 }
                 let (heading, result) = if cancel {
-                    ("Selection cancelled — return to Ckourse.", Err("Folder selection cancelled".to_string()))
+                    (
+                        "Selection cancelled — return to Ckourse.",
+                        Err("Folder selection cancelled".to_string()),
+                    )
                 } else if let Some(id) = id {
-                    ("Folder selected — return to Ckourse.", Ok(PickedFolder { id, name: name.unwrap_or_default() }))
+                    (
+                        "Folder selected — return to Ckourse.",
+                        Ok(PickedFolder {
+                            id,
+                            name: name.unwrap_or_default(),
+                        }),
+                    )
                 } else {
                     ("No folder received.", Err("missing folder id".to_string()))
                 };
-                http_ok(&mut stream, "text/html; charset=utf-8", &closing_html(heading));
+                http_ok(
+                    &mut stream,
+                    "text/html; charset=utf-8",
+                    &closing_html(heading),
+                );
                 return result;
             }
             _ => http_status(&mut stream, 404),
@@ -334,7 +349,11 @@ fn list_folder_recursive<'a>(
     token: &'a str,
     folder_id: &'a str,
 ) -> std::pin::Pin<
-    Box<dyn std::future::Future<Output = Result<Vec<crate::parser::SourceEntry>, String>> + Send + 'a>,
+    Box<
+        dyn std::future::Future<Output = Result<Vec<crate::parser::SourceEntry>, String>>
+            + Send
+            + 'a,
+    >,
 > {
     Box::pin(async move {
         let mut entries = Vec::new();
@@ -524,14 +543,27 @@ fn wait_for_code(listener: TcpListener, expected_state: &str) -> Result<String, 
     let (heading, result) = if let Some(err) = oauth_error {
         ("Sign-in failed.", Err(format!("OAuth error: {err}")))
     } else if state.as_deref() != Some(expected_state) {
-        ("Sign-in could not be verified.", Err("OAuth state mismatch".to_string()))
+        (
+            "Sign-in could not be verified.",
+            Err("OAuth state mismatch".to_string()),
+        )
     } else if let Some(c) = code {
-        ("Connected to Google Drive — you can close this tab and return to Ckourse.", Ok(c))
+        (
+            "Connected to Google Drive — you can close this tab and return to Ckourse.",
+            Ok(c),
+        )
     } else {
-        ("No authorization code received.", Err("missing code".to_string()))
+        (
+            "No authorization code received.",
+            Err("missing code".to_string()),
+        )
     };
 
-    http_ok(&mut stream, "text/html; charset=utf-8", &closing_html(heading));
+    http_ok(
+        &mut stream,
+        "text/html; charset=utf-8",
+        &closing_html(heading),
+    );
     result
 }
 
@@ -549,8 +581,7 @@ fn http_ok(stream: &mut TcpStream, content_type: &str, body: &str) {
 }
 
 fn http_status(stream: &mut TcpStream, code: u16) {
-    let response =
-        format!("HTTP/1.1 {code} \r\nContent-Length: 0\r\nConnection: close\r\n\r\n");
+    let response = format!("HTTP/1.1 {code} \r\nContent-Length: 0\r\nConnection: close\r\n\r\n");
     let _ = stream.write_all(response.as_bytes());
     let _ = stream.flush();
 }
@@ -601,7 +632,11 @@ fn creds_lock() -> &'static Mutex<Option<Credentials>> {
 /// Populate the in-memory credentials cache. Called from the commands layer on
 /// startup (from SQLite) and whenever the user saves new credentials.
 pub fn init_credentials(client_id: String, client_secret: String, api_key: String) {
-    *creds_lock().lock().unwrap() = Some(Credentials { client_id, client_secret, api_key });
+    *creds_lock().lock().unwrap() = Some(Credentials {
+        client_id,
+        client_secret,
+        api_key,
+    });
 }
 
 /// Clear the in-memory credentials cache.
@@ -624,7 +659,9 @@ fn store_tokens(tokens: &StoredTokens) -> Result<(), String> {
 
 fn load_tokens() -> Result<Option<StoredTokens>, String> {
     match entry()?.get_password() {
-        Ok(json) => serde_json::from_str(&json).map(Some).map_err(|e| e.to_string()),
+        Ok(json) => serde_json::from_str(&json)
+            .map(Some)
+            .map_err(|e| e.to_string()),
         Err(keyring::Error::NoEntry) => Ok(None),
         Err(e) => Err(e.to_string()),
     }
