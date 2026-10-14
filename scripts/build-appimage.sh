@@ -4,14 +4,18 @@ set -Eeuo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SAVE="$HOME/ckourse-stream-repro-backup"
 BUNDLE="$ROOT/src-tauri/target/release/bundle/appimage"
-APPDIR="$BUNDLE/ckourse.AppDir"
-OUTPUT="$BUNDLE/ckourse_1.2.0_amd64.AppImage"
 PLUGIN="$HOME/.cache/tauri/linuxdeploy-plugin-appimage.AppImage"
 BUILD_LOG="$SAVE/appimage-build.log"
-STAGED_OUTPUT="$BUNDLE/ckourse_1.2.0_amd64.postprocessed.AppImage"
 
 mkdir -p "$SAVE"
 cd "$ROOT"
+
+PRODUCT_NAME="$(node -p 'require("./src-tauri/tauri.conf.json").productName')"
+VERSION="$(node -p 'require("./src-tauri/tauri.conf.json").version')"
+APPDIR="$BUNDLE/$PRODUCT_NAME.AppDir"
+OUTPUT="$BUNDLE/${PRODUCT_NAME}_${VERSION}_amd64.AppImage"
+STAGED_OUTPUT="$BUNDLE/${PRODUCT_NAME}_${VERSION}_amd64.postprocessed.AppImage"
+CUSTOM_PLUGIN="$APPDIR/usr/lib/$PRODUCT_NAME/gstreamer/libgsttauriasset.so"
 
 if [[ ! -x "$PLUGIN" ]]; then
     echo "ERROR: AppImage packaging plugin not found: $PLUGIN" >&2
@@ -42,21 +46,22 @@ fi
 HOOK="$APPDIR/apprun-hooks/linuxdeploy-plugin-gstreamer.sh"
 
 if [[ ! -f "$HOOK" ||
-      ! -f "$APPDIR/usr/lib/ckourse/gstreamer/libgsttauriasset.so" ]]; then
+      ! -f "$CUSTOM_PLUGIN" ]]; then
     echo "ERROR: AppDir or custom GStreamer plugin is missing." >&2
     exit 1
 fi
 
 echo
 echo "=== Fixing GStreamer plugin search path ==="
-python3 - "$HOOK" <<'PY'
+python3 - "$HOOK" "$PRODUCT_NAME" <<'PY'
 from pathlib import Path
 import sys
 
 path = Path(sys.argv[1])
+product_name = sys.argv[2]
 text = path.read_text()
 
-custom = '${APPDIR}/usr/lib/ckourse/gstreamer'
+custom = f'${{APPDIR}}/usr/lib/{product_name}/gstreamer'
 if custom in text:
     print("Custom plugin path is already present.")
 else:
