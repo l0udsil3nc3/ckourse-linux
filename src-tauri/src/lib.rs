@@ -57,6 +57,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::parse_course_folder,
             commands::import_course,
+            commands::scan_course_files,
+            commands::rescan_course_files,
             commands::get_courses,
             commands::get_course,
             commands::get_course_detail,

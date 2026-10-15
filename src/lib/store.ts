@@ -49,6 +49,27 @@ export async function resetCourseProgress(courseId: number): Promise<void> {
   return invoke("reset_course_progress", { courseId });
 }
 
+export interface CourseFileScan {
+  added: { path: string; title: string; sectionTitle: string }[];
+  missing: { lessonId: number; title: string; videoPath: string }[];
+  unchangedCount: number;
+}
+
+export interface RescanSummary {
+  lessonsAdded: number;
+  lessonsRemoved: number;
+}
+
+/** Compare the course folder on disk against lessons in the DB. */
+export async function scanCourseFiles(courseId: number): Promise<CourseFileScan> {
+  return invoke<CourseFileScan>("scan_course_files", { courseId });
+}
+
+/** Apply added/removed files: drop missing lessons, import new ones. */
+export async function rescanCourseFiles(courseId: number): Promise<RescanSummary> {
+  return invoke<RescanSummary>("rescan_course_files", { courseId });
+}
+
 export async function deleteCourse(courseId: number): Promise<void> {
   return invoke("delete_course", { courseId });
 }

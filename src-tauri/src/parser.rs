@@ -123,15 +123,16 @@ pub enum Confidence {
 
 // --- Internal types ---
 
-struct FileEntry {
-    path: PathBuf,
-    name: String,
-    extension: String,
+#[derive(Clone)]
+pub(crate) struct FileEntry {
+    pub(crate) path: PathBuf,
+    pub(crate) name: String,
+    pub(crate) extension: String,
 }
 
-struct FolderEntry {
-    path: PathBuf,
-    name: String,
+pub(crate) struct FolderEntry {
+    pub(crate) path: PathBuf,
+    pub(crate) name: String,
     sort_key: SortKey,
 }
 
@@ -568,9 +569,112 @@ fn read_directory(path: &Path) -> Result<(Vec<FileEntry>, Vec<FolderEntry>), Str
     Ok((files, folders))
 }
 
+/// Recursively collect every video file under `root` (same filters as the
+/// import parser: hidden entries and sample videos are skipped). Unlike
+/// `parse_folder` this is depth-agnostic — it reports what is on disk, not
+/// what the structural patterns can classify.
+pub fn collect_all_videos(root: &Path) -> Result<Vec<PathBuf>, String> {
+    let mut out = Vec::new();
+    collect_videos_recursive(root, &mut out)?;
+    Ok(out)
+}
+
+fn collect_videos_recursive(dir: &Path, out: &mut Vec<PathBuf>) -> Result<(), String> {
+    let (files, folders) = match read_directory(dir) {
+        Ok(r) => r,
+        // Unreadable subdirectories are skipped, mirroring parse_folder.
+        Err(_) => return Ok(()),
+    };
+    for f in files {
+        if is_video(&f.extension) && !is_sample_video(&f.name) {
+            out.push(f.path);
+        }
+    }
+    for sub in folders {
+        collect_videos_recursive(&sub.path, out)?;
+    }
+    Ok(())
+}
+
+/// Build `ParsedSection`s for a set of newly added video files (absolute
+/// paths under `root`), grouped by parent directory — the same shape a fresh
+/// import would produce for those directories. Section titles are the parent
+/// directory's path relative to the course root, so nested layouts stay
+/// recognizable. Each section gets subtitle/resource/duration probing via
+/// `build_lessons_from_files`.
+pub fn build_rescan_sections(
+    root: &Path,
+    course_title: &str,
+    added_paths: &[PathBuf],
+) -> Result<Vec<ParsedSection>, String> {
+    use std::collections::BTreeMap;
+
+    let added_set: std::collections::HashSet<String> = added_paths
+        .iter()
+        .map(|p| p.to_string_lossy().into_owned())
+        .collect();
+
+    // BTreeMap so sections come out in deterministic path order.
+    let mut by_parent: BTreeMap<PathBuf, Vec<PathBuf>> = BTreeMap::new();
+    for p in added_paths {
+        let parent = p.parent().unwrap_or(root).to_path_buf();
+        by_parent.entry(parent).or_default().push(p.clone());
+    }
+
+    let mut sections = Vec::new();
+    for (order, (parent, _)) in by_parent.iter().enumerate() {
+        let (files, folders) = read_directory(parent)?;
+        let videos: Vec<&FileEntry> = files
+            .iter()
+            .filter(|f| {
+                is_video(&f.extension)
+                    && !is_sample_video(&f.name)
+                    && added_set.contains(f.path.to_string_lossy().as_ref())
+            })
+            .collect();
+        if videos.is_empty() {
+            continue;
+        }
+        let mut subtitles: Vec<FileEntry> = files
+            .iter()
+            .filter(|f| is_subtitle(&f.extension))
+            .cloned()
+            .collect();
+        subtitles.extend(collect_subtitle_folder_files(&folders));
+        let other: Vec<&FileEntry> = files
+            .iter()
+            .filter(|f| {
+                !is_video(&f.extension)
+                    && !is_subtitle(&f.extension)
+                    && !is_hidden(&f.name)
+                    && !is_metadata_file(&f.extension)
+            })
+            .collect();
+        let subtitle_refs: Vec<&FileEntry> = subtitles.iter().collect();
+        let (lessons, _positional) =
+            build_lessons_from_files(&videos, &subtitle_refs, &other, parent);
+
+        let title = match parent.strip_prefix(root) {
+            Ok(rel) if !rel.as_os_str().is_empty() => rel
+                .components()
+                .map(|c| clean_display_name(&c.as_os_str().to_string_lossy()))
+                .collect::<Vec<_>>()
+                .join(" — "),
+            _ => course_title.to_string(),
+        };
+
+        sections.push(ParsedSection {
+            title,
+            order,
+            lessons,
+        });
+    }
+    Ok(sections)
+}
+
 // --- Lesson building ---
 
-fn build_lessons_from_files(
+pub(crate) fn build_lessons_from_files(
     videos: &[&FileEntry],
     subtitles: &[&FileEntry],
     other_files: &[&FileEntry],
@@ -1077,7 +1181,7 @@ pub fn normalize_language(code: &str) -> String {
 
 // --- Display name cleaning ---
 
-fn clean_display_name(name: &str) -> String {
+pub(crate) fn clean_display_name(name: &str) -> String {
     let mut result = name.to_string();
 
     // Strip file extension (from any known type)

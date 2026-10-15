@@ -169,6 +169,9 @@ export function CourseDetail({ className }: CourseDetailProps) {
           await resetCourseProgress(course.id);
           await reload();
         }}
+        onFilesSynced={async () => {
+          await reload();
+        }}
         onDelete={async () => {
           await deleteCourse(course.id);
           navigate(fromParam);

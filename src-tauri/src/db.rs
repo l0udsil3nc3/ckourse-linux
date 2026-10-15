@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::path::Path;
 use std::sync::Mutex;
 
-use crate::parser::ParsedCourse;
+use crate::parser::{ParsedCourse, ParsedSection};
 
 // --- Database state ---
 
@@ -199,7 +199,8 @@ pub fn init_db(app_data_dir: &Path) -> SqlResult<Connection> {
             lesson_title TEXT NOT NULL,
             content TEXT NOT NULL,
             created_at TEXT NOT NULL,
-            updated_at TEXT NOT NULL
+            updated_at TEXT NOT NULL,
+            video_path TEXT NOT NULL DEFAULT ''
         );
 
         CREATE TABLE IF NOT EXISTS bookmarks (
@@ -250,8 +251,43 @@ pub fn init_db(app_data_dir: &Path) -> SqlResult<Connection> {
         CREATE INDEX IF NOT EXISTS idx_subtitles_lesson_id ON subtitles(lesson_id);
         CREATE INDEX IF NOT EXISTS idx_resources_course_id ON resources(course_id);
         CREATE INDEX IF NOT EXISTS idx_courses_updated_at ON courses(updated_at DESC);
+
+        CREATE TABLE IF NOT EXISTS rescan_preserved (
+            course_id INTEGER NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+            video_path TEXT NOT NULL,
+            completed INTEGER NOT NULL DEFAULT 0,
+            duration INTEGER NOT NULL DEFAULT 0,
+            last_position REAL NOT NULL DEFAULT 0,
+            favorited INTEGER NOT NULL DEFAULT 0,
+            favorite_created_at TEXT,
+            PRIMARY KEY(course_id, video_path)
+        );
         ",
     )?;
+
+    // Notes video_path for rescan survival: notes keep their video identity
+    // even after the lesson row is gone, so a re-added file can reattach them.
+    let _ =
+        conn.execute_batch("ALTER TABLE notes ADD COLUMN video_path TEXT NOT NULL DEFAULT '';");
+    let _ = conn.execute_batch(
+        "UPDATE notes SET video_path = (SELECT video_path FROM lessons WHERE id = notes.lesson_id)
+         WHERE (video_path IS NULL OR video_path = '')
+           AND EXISTS (SELECT 1 FROM lessons WHERE id = notes.lesson_id);",
+    );
+    let _ = conn.execute_batch(
+        "CREATE TABLE IF NOT EXISTS rescan_preserved (
+            course_id INTEGER NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+            video_path TEXT NOT NULL,
+            completed INTEGER NOT NULL DEFAULT 0,
+            duration INTEGER NOT NULL DEFAULT 0,
+            last_position REAL NOT NULL DEFAULT 0,
+            favorited INTEGER NOT NULL DEFAULT 0,
+            favorite_created_at TEXT,
+            PRIMARY KEY(course_id, video_path)
+        );",
+    );
+    let _ =
+        conn.execute_batch("CREATE INDEX IF NOT EXISTS idx_notes_video_path ON notes(video_path);");
 
     // Migrations for existing databases
     let _ =
@@ -319,6 +355,244 @@ pub fn init_db(app_data_dir: &Path) -> SqlResult<Connection> {
 }
 
 // --- Course operations ---
+
+/// A lesson's identity for file-sync purposes: what's on disk vs in the DB.
+pub struct LessonFile {
+    pub id: i64,
+    pub title: String,
+    pub video_path: String,
+}
+
+pub fn get_course_lesson_files(conn: &Connection, course_id: i64) -> SqlResult<Vec<LessonFile>> {
+    let mut stmt = conn.prepare(
+        "SELECT l.id, l.title, l.video_path
+         FROM lessons l JOIN sections s ON l.section_id = s.id
+         WHERE s.course_id = ?1
+         ORDER BY s.sort_order, l.sort_order",
+    )?;
+    let rows = stmt.query_map(params![course_id], |row| {
+        Ok(LessonFile {
+            id: row.get(0)?,
+            title: row.get(1)?,
+            video_path: row.get(2)?,
+        })
+    })?;
+    rows.collect()
+}
+
+/// Apply a file rescan to a course: delete lessons whose files disappeared,
+/// insert new sections/lessons for files that appeared. Runs in one
+/// transaction so a partial failure rolls back cleanly. Returns
+/// `(lessons_added, lessons_removed)`.
+pub fn apply_course_rescan(
+    conn: &Connection,
+    course_id: i64,
+    new_sections: &[ParsedSection],
+    missing_lesson_ids: &[i64],
+) -> SqlResult<(usize, usize)> {
+    let now = chrono_now();
+    conn.execute_batch("BEGIN")?;
+    match apply_course_rescan_inner(conn, course_id, new_sections, missing_lesson_ids, &now) {
+        Ok(counts) => {
+            conn.execute_batch("COMMIT")?;
+            Ok(counts)
+        }
+        Err(e) => {
+            let _ = conn.execute_batch("ROLLBACK");
+            Err(e)
+        }
+    }
+}
+
+fn apply_course_rescan_inner(
+    conn: &Connection,
+    course_id: i64,
+    new_sections: &[ParsedSection],
+    missing_lesson_ids: &[i64],
+    now: &str,
+) -> SqlResult<(usize, usize)> {
+    // 1. Snapshot state for lessons about to disappear so it survives across
+    // rescans. Notes already carry video_path and survive the DELETE (no FK on
+    // lesson_id); progress + favorites would be lost (favorites cascade), so
+    // stash them in rescan_preserved keyed by (course_id, video_path). When
+    // the same file is re-added later — same rescan or a future one — the
+    // insert path below restores from this stash, else from cross-course MAX.
+    for id in missing_lesson_ids {
+        let state: Option<(String, i64, i64, f64)> = conn
+            .query_row(
+                "SELECT l.video_path, l.completed, l.duration, l.last_position
+                 FROM lessons l JOIN sections s ON s.id = l.section_id
+                 WHERE l.id = ?1 AND s.course_id = ?2",
+                params![id, course_id],
+                |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?)),
+            )
+            .ok();
+        let Some((video_path, completed, duration, last_position)) = state else {
+            continue;
+        };
+        let fav_created: Option<String> = conn
+            .query_row(
+                "SELECT created_at FROM favorites WHERE lesson_id = ?1",
+                params![id],
+                |r| r.get(0),
+            )
+            .ok();
+        let favorited = fav_created.is_some() as i32;
+        conn.execute(
+            "INSERT INTO rescan_preserved
+                 (course_id, video_path, completed, duration, last_position, favorited, favorite_created_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
+             ON CONFLICT(course_id, video_path) DO UPDATE SET
+               completed = MAX(rescan_preserved.completed, excluded.completed),
+               duration = MAX(rescan_preserved.duration, excluded.duration),
+               last_position = MAX(rescan_preserved.last_position, excluded.last_position),
+               favorited = MAX(rescan_preserved.favorited, excluded.favorited),
+               favorite_created_at = COALESCE(excluded.favorite_created_at, rescan_preserved.favorite_created_at)",
+            params![
+                course_id,
+                video_path,
+                completed,
+                duration,
+                last_position,
+                favorited,
+                fav_created
+            ],
+        )?;
+    }
+
+    // 2. Remove lessons whose files are gone. Subtitles/resources cascade;
+    // favorites cascade (restored from stash on re-add); notes survive with
+    // video_path intact and are reattached in step 4.
+    let mut removed = 0usize;
+    for id in missing_lesson_ids {
+        removed += conn.execute("DELETE FROM lessons WHERE id = ?1", params![id])?;
+    }
+
+    // Drop sections left empty by the removal so the UI isn't left with
+    // empty groups. New sections below get fresh ids after this cleanup.
+    conn.execute(
+        "DELETE FROM sections WHERE course_id = ?1
+         AND NOT EXISTS (SELECT 1 FROM lessons WHERE lessons.section_id = sections.id)",
+        params![course_id],
+    )?;
+
+    // New sections append after the existing ones.
+    let base_section_order: i64 = conn.query_row(
+        "SELECT COALESCE(MAX(sort_order), -1) + 1 FROM sections WHERE course_id = ?1",
+        params![course_id],
+        |r| r.get(0),
+    )?;
+
+    let mut added = 0usize;
+    for (idx, section) in new_sections.iter().enumerate() {
+        conn.execute(
+            "INSERT INTO sections (course_id, title, sort_order) VALUES (?1, ?2, ?3)",
+            params![course_id, section.title, base_section_order + idx as i64],
+        )?;
+        let section_id = conn.last_insert_rowid();
+
+        for lesson in &section.lessons {
+            let probed_mins = (lesson.duration_secs / 60) as i64;
+            // Prefer the preserved per-course state for this exact path;
+            // otherwise inherit cross-course MAX like fresh import does.
+            let preserved: Option<(i64, i64, f64, i64, Option<String>)> = conn
+                .query_row(
+                    "SELECT completed, duration, last_position, favorited, favorite_created_at
+                     FROM rescan_preserved WHERE course_id = ?1 AND video_path = ?2",
+                    params![course_id, lesson.video_path],
+                    |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?, r.get(4)?)),
+                )
+                .ok();
+            let (completed, duration, last_position, restore_fav, fav_created_at) =
+                match &preserved {
+                    Some((c, d, p, f, created)) => {
+                        (*c, (*d).max(probed_mins), *p, *f != 0, created.clone())
+                    }
+                    None => {
+                        let (c, d, p): (i64, Option<i64>, Option<f64>) = conn
+                            .query_row(
+                                "SELECT COALESCE(MAX(completed), 0),
+                                        MAX(CASE WHEN duration > 0 THEN duration END),
+                                        COALESCE(MAX(last_position), 0)
+                                 FROM lessons WHERE video_path = ?1",
+                                params![lesson.video_path],
+                                |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
+                            )
+                            .unwrap_or((0, None, Some(0.0)));
+                        (
+                            c,
+                            d.unwrap_or(probed_mins).max(probed_mins),
+                            p.unwrap_or(0.0),
+                            false,
+                            None,
+                        )
+                    }
+                };
+            conn.execute(
+                "INSERT INTO lessons (section_id, title, video_path, sort_order, completed, duration, last_position)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+                params![
+                    section_id,
+                    lesson.title,
+                    lesson.video_path,
+                    lesson.order,
+                    completed,
+                    duration,
+                    last_position
+                ],
+            )?;
+            added += 1;
+            let lesson_id = conn.last_insert_rowid();
+
+            if restore_fav {
+                let created = fav_created_at.unwrap_or_else(|| now.to_string());
+                conn.execute(
+                    "INSERT OR IGNORE INTO favorites (lesson_id, created_at) VALUES (?1, ?2)",
+                    params![lesson_id, created],
+                )?;
+            }
+            // Consume the stash entry once restored so a later removal
+            // snapshots fresh state instead of replaying stale progress.
+            if preserved.is_some() {
+                conn.execute(
+                    "DELETE FROM rescan_preserved WHERE course_id = ?1 AND video_path = ?2",
+                    params![course_id, lesson.video_path],
+                )?;
+            }
+
+            // Reattach orphaned notes for this video back to the new row so
+            // navigation (lesson_id) works again. Notes already visible via
+            // shared video_path stay untouched if still linked to a live row.
+            conn.execute(
+                "UPDATE notes SET lesson_id = ?1, lesson_title = ?2
+                 WHERE course_id = ?3 AND video_path = ?4
+                   AND lesson_id NOT IN (SELECT id FROM lessons)",
+                params![lesson_id, lesson.title, course_id, lesson.video_path],
+            )?;
+
+            for sub in &lesson.subtitles {
+                conn.execute(
+                    "INSERT INTO subtitles (lesson_id, path, language, is_positional_match) VALUES (?1, ?2, ?3, ?4)",
+                    params![lesson_id, sub.path, sub.language, sub.is_positional_match as i32],
+                )?;
+            }
+            for r in &lesson.resources {
+                let rt = format!("{:?}", r.resource_type).to_lowercase();
+                conn.execute(
+                    "INSERT INTO resources (course_id, lesson_id, title, path, resource_type) VALUES (?1, ?2, ?3, ?4, ?5)",
+                    params![course_id, lesson_id, r.title, r.path, rt],
+                )?;
+            }
+        }
+    }
+
+    conn.execute(
+        "UPDATE courses SET updated_at = ?1 WHERE id = ?2",
+        params![now, course_id],
+    )?;
+
+    Ok((added, removed))
+}
 
 pub fn save_parsed_course(
     conn: &Connection,
@@ -794,14 +1068,17 @@ pub fn get_all_notes(conn: &Connection) -> SqlResult<Vec<NoteWithCourse>> {
 }
 
 pub fn get_course_notes(conn: &Connection, course_id: i64) -> SqlResult<Vec<Note>> {
+    // Notes carry video_path so they survive lesson deletion across rescans.
+    // LEFT JOIN keeps orphans (dead lesson_id) visible as long as their video
+    // is still part of the course; re-added files reattach lesson_id on insert.
     let mut stmt = conn.prepare(
         "SELECT DISTINCT n.id, n.course_id, n.lesson_id, n.lesson_title, n.content,
-                n.created_at, n.updated_at, note_lesson.video_path
+                n.created_at, n.updated_at,
+                COALESCE(NULLIF(n.video_path, ''), note_lesson.video_path) AS video_path
          FROM notes AS n
-         JOIN lessons AS note_lesson ON note_lesson.id = n.lesson_id
-         JOIN sections AS note_section ON note_section.id = note_lesson.section_id
+         LEFT JOIN lessons AS note_lesson ON note_lesson.id = n.lesson_id
          WHERE n.course_id = ?1
-            OR note_lesson.video_path IN (
+            OR COALESCE(NULLIF(n.video_path, ''), note_lesson.video_path) IN (
                 SELECT course_lesson.video_path
                 FROM lessons AS course_lesson
                 JOIN sections AS course_section ON course_section.id = course_lesson.section_id
@@ -842,9 +1119,9 @@ pub fn add_note(
     )?;
     let now = chrono_now();
     conn.execute(
-        "INSERT INTO notes (course_id, lesson_id, lesson_title, content, created_at, updated_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
-        params![course_id, lesson_id, lesson_title, content, now, now],
+        "INSERT INTO notes (course_id, lesson_id, lesson_title, content, created_at, updated_at, video_path)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+        params![course_id, lesson_id, lesson_title, content, now, now, video_path],
     )?;
 
     let id = conn.last_insert_rowid();
@@ -1480,6 +1757,7 @@ pub fn delete_all_data(conn: &Connection) -> SqlResult<()> {
         DELETE FROM courses;
         DELETE FROM activity_log;
         DELETE FROM settings;
+        DELETE FROM rescan_preserved;
         ",
     )?;
     Ok(())

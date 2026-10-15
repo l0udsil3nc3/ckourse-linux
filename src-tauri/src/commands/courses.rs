@@ -138,3 +138,160 @@ pub fn search_content(
     let conn = state.conn.lock().map_err(|e| e.to_string())?;
     db::search_content(&conn, &query).map_err(|e| e.to_string())
 }
+
+// --- File rescan (added/removed files vs. DB) ---
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AddedFile {
+    pub path: String,
+    pub title: String,
+    pub section_title: String,
+}
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MissingFile {
+    pub lesson_id: i64,
+    pub title: String,
+    pub video_path: String,
+}
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FileScanResult {
+    pub added: Vec<AddedFile>,
+    pub missing: Vec<MissingFile>,
+    pub unchanged_count: usize,
+}
+
+/// Compare a local course's folder on disk against its lessons in the DB.
+/// Returns which video files were added and which disappeared. Non-local
+/// courses are rejected: only a filesystem path can be walked.
+fn scan_files_impl(state: &DbState, course_id: i64) -> Result<FileScanResult, String> {
+    let (source_type, folder_path, lessons) = {
+        let conn = state.conn.lock().map_err(|e| e.to_string())?;
+        let course = db::get_course_by_id(&conn, course_id)
+            .map_err(|e| e.to_string())?
+            .ok_or_else(|| "Course not found".to_string())?;
+        let source_type: String = conn
+            .query_row(
+                "SELECT source_type FROM courses WHERE id = ?1",
+                [course_id],
+                |r| r.get(0),
+            )
+            .map_err(|e| e.to_string())?;
+        let lessons = db::get_course_lesson_files(&conn, course_id).map_err(|e| e.to_string())?;
+        (source_type, course.folder_path, lessons)
+    };
+
+    if source_type != "local" {
+        return Err("Only local courses can be scanned for file changes".to_string());
+    }
+    let root = Path::new(&folder_path);
+    if !root.is_dir() {
+        return Err(format!("Course folder not found: {}", folder_path));
+    }
+
+    let on_disk = parser::collect_all_videos(root)?;
+
+    let mut disk_set: std::collections::HashSet<String> = on_disk
+        .iter()
+        .map(|p| p.to_string_lossy().into_owned())
+        .collect();
+    let mut db_set: std::collections::HashSet<String> =
+        lessons.iter().map(|l| l.video_path.clone()).collect();
+
+    let missing: Vec<MissingFile> = lessons
+        .iter()
+        .filter(|l| !disk_set.contains(&l.video_path))
+        .map(|l| MissingFile {
+            lesson_id: l.id,
+            title: l.title.clone(),
+            video_path: l.video_path.clone(),
+        })
+        .collect();
+
+    let added: Vec<AddedFile> = on_disk
+        .iter()
+        .filter(|p| !db_set.contains(p.to_string_lossy().as_ref()))
+        .map(|p| {
+            let path_str = p.to_string_lossy().into_owned();
+            let title = p
+                .file_stem()
+                .map(|s| s.to_string_lossy().into_owned())
+                .unwrap_or_else(|| path_str.clone());
+            let section_title = p
+                .parent()
+                .and_then(|dir| dir.strip_prefix(root).ok())
+                .map(|rel| rel.to_string_lossy().replace('/', " — "))
+                .unwrap_or_default();
+            AddedFile {
+                path: path_str,
+                title,
+                section_title,
+            }
+        })
+        .collect();
+
+    let unchanged_count = db_set.intersection(&disk_set).count();
+    disk_set.clear();
+    db_set.clear();
+
+    Ok(FileScanResult {
+        added,
+        missing,
+        unchanged_count,
+    })
+}
+
+#[tauri::command]
+pub async fn scan_course_files(
+    state: tauri::State<'_, DbState>,
+    course_id: i64,
+) -> Result<FileScanResult, String> {
+    scan_files_impl(state.inner(), course_id)
+}
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RescanSummary {
+    pub lessons_added: usize,
+    pub lessons_removed: usize,
+}
+
+/// Apply file changes: remove lessons whose files are gone, add lessons for
+/// new files (with duration/subtitle probing, as at import).
+#[tauri::command]
+pub async fn rescan_course_files(
+    state: tauri::State<'_, DbState>,
+    course_id: i64,
+) -> Result<RescanSummary, String> {
+    // Scan first (no lock held while walking the filesystem / probing).
+    let scan = scan_files_impl(state.inner(), course_id)?;
+
+    if scan.added.is_empty() && scan.missing.is_empty() {
+        return Ok(RescanSummary { lessons_added: 0, lessons_removed: 0 });
+    }
+
+    // Build sections (duration + subtitle probing) without holding the DB
+    // lock, then apply in one transaction.
+    let (title, folder_path) = {
+        let conn = state.conn.lock().map_err(|e| e.to_string())?;
+        let course = db::get_course_by_id(&conn, course_id)
+            .map_err(|e| e.to_string())?
+            .ok_or_else(|| "Course not found".to_string())?;
+        (course.title, course.folder_path)
+    };
+    let root = Path::new(&folder_path);
+    let added_paths: Vec<std::path::PathBuf> =
+        scan.added.iter().map(|a| std::path::PathBuf::from(&a.path)).collect();
+    let sections = parser::build_rescan_sections(root, &title, &added_paths)?;
+
+    let conn = state.conn.lock().map_err(|e| e.to_string())?;
+    let missing_ids: Vec<i64> = scan.missing.iter().map(|m| m.lesson_id).collect();
+    let (added, removed) = db::apply_course_rescan(&conn, course_id, &sections, &missing_ids)
+        .map_err(|e| e.to_string())?;
+
+    Ok(RescanSummary { lessons_added: added, lessons_removed: removed })
+}

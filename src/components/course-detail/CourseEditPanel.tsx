@@ -4,15 +4,26 @@ import {
   PaletteIcon as Palette,
   TrashIcon as Trash,
   ArrowCounterClockwiseIcon as ArrowCounterClockwise,
+  ArrowsClockwiseIcon as ArrowsClockwise,
   FloppyDiskIcon as FloppyDisk,
+  PlusIcon as Plus,
+  MinusIcon as Minus,
   WarningIcon as Warning,
   FolderOpenIcon as FolderOpen,
 } from "@phosphor-icons/react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { SquircleButton } from "@/components/ui/SquircleButton";
 import { EASE_OUT, SNAPPY } from "@/lib/constants";
 import type { CourseCategory, Course } from "@/types";
-import { getCustomCategories, addCustomCategory, deleteCustomCategory } from "@/lib/store";
+import {
+  getCustomCategories,
+  addCustomCategory,
+  deleteCustomCategory,
+  scanCourseFiles,
+  rescanCourseFiles,
+  type CourseFileScan,
+} from "@/lib/store";
 
 const builtinCategories: { value: CourseCategory; label: string }[] = [
   { value: "frontend", label: "Frontend" },
@@ -43,6 +54,7 @@ interface CourseEditPanelProps {
   onSave: (title: string, author: string, accentColor: string, category: string) => Promise<void>;
   onResetProgress: () => Promise<void>;
   onDelete: () => Promise<void>;
+  onFilesSynced: () => Promise<void>;
   onBack: () => void;
   className?: string;
 }
@@ -52,6 +64,7 @@ export function CourseEditPanel({
   onSave,
   onResetProgress,
   onDelete,
+  onFilesSynced,
   onBack,
   className,
 }: CourseEditPanelProps) {
@@ -68,6 +81,15 @@ export function CourseEditPanel({
   const [confirmReset, setConfirmReset] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [mounted, setMounted] = useState(false);
+
+  // File rescan (added/removed videos on disk)
+  const [scan, setScan] = useState<CourseFileScan | null>(null);
+  const [scanning, setScanning] = useState(false);
+  const [applying, setApplying] = useState(false);
+  const [scanError, setScanError] = useState<string | null>(null);
+  const isLocalFolder =
+    !course.folderPath.startsWith("gdrive:") && !course.folderPath.startsWith("srv:");
+  const hasScanChanges = !!scan && (scan.added.length > 0 || scan.missing.length > 0);
 
   useState(() => {
     requestAnimationFrame(() => setMounted(true));
@@ -98,6 +120,41 @@ export function CourseEditPanel({
 
   const handleDelete = async () => {
     await onDelete();
+  };
+
+  const handleScan = async () => {
+    if (scanning || applying) return;
+    setScanning(true);
+    setScan(null);
+    setScanError(null);
+    try {
+      setScan(await scanCourseFiles(course.id));
+    } catch (e) {
+      setScanError(String(e));
+    } finally {
+      setScanning(false);
+    }
+  };
+
+  const handleApplyScan = async () => {
+    if (!scan || applying) return;
+    setApplying(true);
+    try {
+      const summary = await rescanCourseFiles(course.id);
+      if (summary.lessonsAdded === 0 && summary.lessonsRemoved === 0) {
+        toast.info("Files already match the course.");
+      } else {
+        toast.success(
+          `Synced with folder — ${summary.lessonsAdded} added, ${summary.lessonsRemoved} removed`,
+        );
+      }
+      setScan(null);
+      await onFilesSynced();
+    } catch (e) {
+      toast.error(`Couldn't sync files: ${String(e)}`);
+    } finally {
+      setApplying(false);
+    }
   };
 
   return (
@@ -245,6 +302,134 @@ export function CourseEditPanel({
           <h3 className="font-heading text-base font-bold text-foreground">
             Manage
           </h3>
+
+          {isLocalFolder && (
+            <div className="rounded-xl border border-border bg-card p-4">
+              <div className="flex items-start gap-3">
+                <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-success/10">
+                  <ArrowsClockwise className="size-4 text-success" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-sans text-sm font-medium text-foreground">
+                    Files on Disk
+                  </p>
+                  <p className="mt-0.5 font-sans text-xs text-muted-foreground">
+                    Check for videos added to or removed from the course
+                    folder.
+                  </p>
+
+                  {scan && !hasScanChanges && !scanError && (
+                    <div className="mt-3 rounded-md bg-success/10 px-3 py-2 font-sans text-xs text-success">
+                      Everything matches — {scan.unchangedCount} lessons, no
+                      changes.
+                    </div>
+                  )}
+
+                  {hasScanChanges && (
+                    <div className="mt-3 flex flex-col gap-2">
+                      {scan.added.length > 0 && (
+                        <div className="rounded-md bg-secondary px-3 py-2">
+                          <p className="font-sans text-xs font-semibold text-foreground">
+                            <Plus
+                              className="mr-1 inline size-3 text-success"
+                              weight="bold"
+                            />
+                            {scan.added.length} added
+                          </p>
+                          <ul className="mt-1 flex flex-col gap-0.5">
+                            {scan.added.slice(0, 6).map((f) => (
+                              <li
+                                key={f.path}
+                                className="truncate font-sans text-xs text-muted-foreground"
+                              >
+                                {f.sectionTitle
+                                  ? `${f.sectionTitle} — ${f.title}`
+                                  : f.title}
+                              </li>
+                            ))}
+                            {scan.added.length > 6 && (
+                              <li className="font-sans text-xs text-muted-foreground/70">
+                                +{scan.added.length - 6} more…
+                              </li>
+                            )}
+                          </ul>
+                        </div>
+                      )}
+                      {scan.missing.length > 0 && (
+                        <div className="rounded-md bg-destructive/5 px-3 py-2">
+                          <p className="font-sans text-xs font-semibold text-destructive">
+                            <Minus
+                              className="mr-1 inline size-3 text-destructive"
+                              weight="bold"
+                            />
+                            {scan.missing.length} missing
+                          </p>
+                          <ul className="mt-1 flex flex-col gap-0.5">
+                            {scan.missing.slice(0, 6).map((f) => (
+                              <li
+                                key={f.lessonId}
+                                className="truncate font-sans text-xs text-muted-foreground"
+                              >
+                                {f.title}
+                              </li>
+                            ))}
+                            {scan.missing.length > 6 && (
+                              <li className="font-sans text-xs text-muted-foreground/70">
+                                +{scan.missing.length - 6} more…
+                              </li>
+                            )}
+                          </ul>
+                        </div>
+                      )}
+                        </div>
+                  )}
+
+                  {scanError && (
+                    <p className="mt-3 font-sans text-xs text-destructive">
+                      {scanError}
+                    </p>
+                  )}
+
+                  <div className="mt-3 flex items-center gap-2">
+                    {hasScanChanges ? (
+                      <>
+                        <button
+                          onClick={handleApplyScan}
+                          disabled={applying}
+                          className="rounded-md bg-primary px-3 py-1.5 font-sans text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-60"
+                          style={{ transitionTimingFunction: SNAPPY }}
+                        >
+                          {applying
+                            ? "Syncing…"
+                            : `Apply — add ${scan.added.length} · remove ${scan.missing.length}`}
+                        </button>
+                        <button
+                          onClick={() => setScan(null)}
+                          disabled={applying}
+                          className="rounded-md px-3 py-1.5 font-sans text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+                        >
+                          Discard
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        onClick={handleScan}
+                        disabled={scanning || applying}
+                        className="rounded-md border border-border px-3 py-1.5 font-sans text-xs font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground disabled:opacity-60"
+                        style={{ transitionTimingFunction: SNAPPY }}
+                      >
+                        {scanning
+                          ? "Checking…"
+                          : scan
+                            ? "Check Again"
+                            : "Check for Changes"}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="rounded-xl border border-border bg-card p-4">
             <div className="flex items-start gap-3">
