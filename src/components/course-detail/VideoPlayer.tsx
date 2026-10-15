@@ -269,13 +269,63 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
     veilTimerRef.current = setTimeout(() => setSeekVeil(false), 100);
   }, []);
 
+  // Quiet period that ends a skip burst: a commit fires this long after the
+  // last press, so mashing accumulates instead of strobing.
+  const COALESCE_WINDOW_MS = 250;
+  // Absolute target the burst is building toward (null when no burst active).
+  const pendingTargetRef = useRef<number | null>(null);
+  const coalesceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const cancelPendingSeek = useCallback(() => {
+    if (coalesceTimerRef.current) {
+      clearTimeout(coalesceTimerRef.current);
+      coalesceTimerRef.current = null;
+    }
+    pendingTargetRef.current = null;
+  }, []);
+
+  const flushPendingSeek = useCallback(() => {
+    coalesceTimerRef.current = null;
+    const t = pendingTargetRef.current;
+    pendingTargetRef.current = null;
+    if (t != null) commitSeek(t);
+  }, [commitSeek]);
+
+  // Shared by skip buttons and seek keys. The first press commits immediately
+  // (no added latency); presses landing inside the window accumulate into one
+  // commit when the burst pauses, so mashing or held-key auto-repeat can't
+  // re-flush faster than the pipeline re-primes. Opposite presses net out.
+  const pressSeek = useCallback(
+    (amount: number) => {
+      const v = videoRef.current;
+      if (!v || !Number.isFinite(v.duration)) return;
+      raiseVeil();
+      if (coalesceTimerRef.current) {
+        clearTimeout(coalesceTimerRef.current);
+        const base = pendingTargetRef.current ?? v.currentTime;
+        const target = Math.max(0, Math.min(v.duration, base + amount));
+        pendingTargetRef.current = target;
+        setVideoTime(target);
+      } else {
+        const target = Math.max(0, Math.min(v.duration, v.currentTime + amount));
+        setVideoTime(target);
+        commitSeek(target);
+        pendingTargetRef.current = null;
+      }
+      coalesceTimerRef.current = setTimeout(flushPendingSeek, COALESCE_WINDOW_MS);
+    },
+    [commitSeek, flushPendingSeek, raiseVeil],
+  );
+
   useEffect(() => () => {
     if (veilTimerRef.current) clearTimeout(veilTimerRef.current);
+    if (coalesceTimerRef.current) clearTimeout(coalesceTimerRef.current);
   }, []);
 
   useImperativeHandle(ref, () => ({
     seekTo(seconds: number) {
       if (videoRef.current) {
+        cancelPendingSeek();
         commitSeek(seconds);
         setVideoTime(seconds);
         onTimeUpdate?.(seconds);
@@ -286,7 +336,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
         videoRef.current.pause();
       }
     },
-  }), [commitSeek, onTimeUpdate]);
+  }), [cancelPendingSeek, commitSeek, onTimeUpdate]);
 
   const [videoTime, setVideoTime] = useState(0);
   const [videoDuration, setVideoDuration] = useState(0);
@@ -354,9 +404,10 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
   // Reset auto-skip cancelled state when lesson changes
   useEffect(() => {
     setAutoSkipCancelled(false);
+    cancelPendingSeek();
     if (veilTimerRef.current) clearTimeout(veilTimerRef.current);
     setSeekVeil(false);
-  }, [lesson?.id]);
+  }, [cancelPendingSeek, lesson?.id]);
 
   // Persist subtitle style to localStorage
   useEffect(() => {
@@ -543,12 +594,12 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
           break;
         case "ArrowLeft":
           e.preventDefault();
-          commitSeek(v.currentTime - skipSeconds);
+          pressSeek(-skipSeconds);
           resetHideTimer();
           break;
         case "ArrowRight":
           e.preventDefault();
-          commitSeek(v.currentTime + skipSeconds);
+          pressSeek(skipSeconds);
           resetHideTimer();
           break;
         case "ArrowUp":
@@ -578,12 +629,12 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
           break;
         case "j":
           e.preventDefault();
-          commitSeek(v.currentTime - skipSeconds);
+          pressSeek(-skipSeconds);
           resetHideTimer();
           break;
         case "l":
           e.preventDefault();
-          commitSeek(v.currentTime + skipSeconds);
+          pressSeek(skipSeconds);
           resetHideTimer();
           break;
         case "c":
@@ -736,18 +787,19 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
 
   const skipForward = useCallback(() => {
     if (!videoRef.current) return;
-    commitSeek(videoRef.current.currentTime + skipSeconds);
+    pressSeek(skipSeconds);
     resetHideTimer();
-  }, [commitSeek, resetHideTimer, skipSeconds]);
+  }, [pressSeek, resetHideTimer, skipSeconds]);
 
   const skipBackward = useCallback(() => {
     if (!videoRef.current) return;
-    commitSeek(videoRef.current.currentTime - skipSeconds);
+    pressSeek(-skipSeconds);
     resetHideTimer();
-  }, [commitSeek, resetHideTimer, skipSeconds]);
+  }, [pressSeek, resetHideTimer, skipSeconds]);
 
   const handleReplay = useCallback(() => {
     if (!videoRef.current) return;
+    cancelPendingSeek();
     commitSeek(0);
     safePlay(videoRef.current, {
       trigger: "replay",
@@ -755,7 +807,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
       videoPath: lesson?.videoPath,
     });
     setHasEnded(false);
-  }, [commitSeek, lesson?.id, lesson?.videoPath]);
+  }, [cancelPendingSeek, commitSeek, lesson?.id, lesson?.videoPath]);
 
   const handleDoubleClick = useCallback(() => {
     toggleFullscreen();
@@ -784,8 +836,12 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
     // While dragging the seek bar the drag owns the playhead display.
     if (isSeekingRef.current) return;
     const t = videoRef.current.currentTime;
-    setVideoTime(t);
-    onTimeUpdate?.(t);
+    // During a skip burst the presses own the display (the pending target);
+    // letting timeupdate overwrite it would bounce the playhead.
+    if (coalesceTimerRef.current == null) {
+      setVideoTime(t);
+      onTimeUpdate?.(t);
+    }
     updateBuffered();
   }, [onTimeUpdate, updateBuffered]);
 
@@ -959,6 +1015,8 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
       e.preventDefault();
       setIsSeeking(true);
       isSeekingRef.current = true;
+      // An explicit drag target wins over any accumulated skip burst.
+      cancelPendingSeek();
       // Pre-dim while aiming: the video keeps playing underneath, and by
       // release time the cut to black starts from dimmed instead of full
       // brightness. Released by the mouseup below (or `seeked` for real seeks).
@@ -993,7 +1051,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
       window.addEventListener("mousemove", handleMouseMove);
       window.addEventListener("mouseup", handleMouseUp);
     },
-    [commitSeek, raiseVeil, releaseVeilSoon, videoDuration],
+    [cancelPendingSeek, commitSeek, raiseVeil, releaseVeilSoon, videoDuration],
   );
 
   const handleSeekHover = useCallback(
