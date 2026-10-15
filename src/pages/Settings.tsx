@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { usePageVisible } from "@/hooks/usePageVisible";
 import { useSettings, AUTOPLAY_DELAY_MAX } from "@/hooks/useSettings";
+import { useTheme } from "@/hooks/useTheme";
 import {
   GearSixIcon as GearSix,
   PlayIcon as Play,
@@ -25,6 +26,9 @@ import {
   KeyIcon as Key,
   LinkSimpleIcon as Link,
   LinkBreakIcon as LinkBreak,
+  PaletteIcon as Palette,
+  MoonIcon as Moon,
+  SunIcon as Sun,
 } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import type { LibraryStats } from "@/types";
@@ -44,6 +48,7 @@ import {
   SettingRow,
   CredInput,
 } from "@/components/settings/SettingsPrimitives";
+import { ThemedSelect, type ThemedSelectOption as SelectOption } from "@/components/ui/ThemedSelect";
 import { ServersSection } from "@/components/settings/ServersSection";
 import { useUpdater } from "@/hooks/useUpdater";
 import { getVersion } from "@tauri-apps/api/app";
@@ -72,45 +77,6 @@ function Toggle({ checked, onChange }: ToggleProps) {
         )}
       />
     </button>
-  );
-}
-
-interface SelectOption {
-  value: string;
-  label: string;
-}
-
-interface SelectProps {
-  value: string;
-  onChange: (value: string) => void;
-  options: SelectOption[];
-}
-
-function Select({ value, onChange, options }: SelectProps) {
-  return (
-    <div className="relative">
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className={cn(
-          "appearance-none rounded-lg border border-border bg-secondary px-3 py-1.5",
-          "font-sans text-sm text-foreground outline-none",
-          "cursor-pointer transition-colors hover:border-muted-foreground/30",
-          "pr-8",
-        )}
-      >
-        {options.map((opt) => (
-          <option key={opt.value} value={opt.value}>
-            {opt.label}
-          </option>
-        ))}
-      </select>
-      <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground">
-        <svg width="10" height="6" viewBox="0 0 10 6" fill="none">
-          <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      </div>
-    </div>
   );
 }
 
@@ -244,6 +210,47 @@ const SKIP_OPTIONS: SelectOption[] = [
   { value: "15", label: "15s" },
   { value: "30", label: "30s" },
 ];
+
+const FAMILY_OPTIONS: SelectOption[] = [
+  { value: "default", label: "Default" },
+  { value: "classic", label: "Classic" },
+  { value: "gnome", label: "GNOME" },
+];
+
+function AppearanceSection({ index }: { index: number }) {
+  const { family, mode, setFamily } = useTheme();
+
+  return (
+    <SectionCard
+      title="Appearance"
+      icon={<Palette className="size-4 text-primary" weight="bold" />}
+      index={index}
+    >
+      <SettingRow
+        icon={mode === "dark" ? <Moon className="size-4" /> : <Sun className="size-4" />}
+        label="Theme Family"
+        description={
+          family === "gnome" ? "Adwaita-inspired blue theme" :
+          family === "classic" ? "Default layout with Nautilus blue, no gradients" :
+          "Original electric lime theme"
+        }
+      >
+        <ThemedSelect
+          value={family}
+          onChange={(v) => setFamily(v as "default" | "classic" | "gnome")}
+          options={FAMILY_OPTIONS}
+        />
+      </SettingRow>
+      <SettingRow
+        icon={mode === "dark" ? <Moon className="size-4" /> : <Sun className="size-4" />}
+        label="Color Mode"
+        description="Use the header toggle to switch between light and dark"
+      >
+        <span className="font-sans text-sm text-muted-foreground capitalize">{mode}</span>
+      </SettingRow>
+    </SectionCard>
+  );
+}
 
 interface SettingsProps {
   className?: string;
@@ -599,10 +606,12 @@ export function Settings({ className }: SettingsProps) {
       </div>
 
       <div className="flex flex-col gap-4">
+        <AppearanceSection index={0} />
+
         <SectionCard
           title="Playback"
           icon={<Play className="size-4 text-primary" weight="bold" />}
-          index={0}
+          index={1}
         >
           <SettingRow
             icon={<SkipForward className="size-4" />}
@@ -652,7 +661,7 @@ export function Settings({ className }: SettingsProps) {
             icon={<FastForward className="size-4" />}
             label="Default playback speed"
           >
-            <Select
+            <ThemedSelect
               value={String(settings.default_speed)}
               onChange={(v) => update("default_speed", v)}
               options={SPEED_OPTIONS}
@@ -680,7 +689,7 @@ export function Settings({ className }: SettingsProps) {
             icon={<MonitorPlay className="size-4" />}
             label="Skip forward / backward"
           >
-            <Select
+            <ThemedSelect
               value={String(settings.skip_forward_secs)}
               onChange={(v) => {
                 update("skip_forward_secs", v);
@@ -694,7 +703,7 @@ export function Settings({ className }: SettingsProps) {
         <SectionCard
           title="Library"
           icon={<Database className="size-4 text-info" weight="bold" />}
-          index={1}
+          index={2}
         >
           {stats && (
             <div className="grid grid-cols-3 gap-2.5">
@@ -738,16 +747,16 @@ export function Settings({ className }: SettingsProps) {
           </div>
         </SectionCard>
 
-        <UpdatesSection index={2} />
+        <UpdatesSection index={3} />
 
-        <GoogleDriveSection index={3} />
+        <GoogleDriveSection index={4} />
 
-        <ServersSection index={4} />
+        <ServersSection index={5} />
 
         <SectionCard
           title="Danger Zone"
           icon={<WarningCircle className="size-4 text-destructive" weight="bold" />}
-          index={5}
+          index={6}
         >
           <div className="flex items-center justify-between gap-4 rounded-lg px-2 py-3">
             <div className="flex items-center gap-3">

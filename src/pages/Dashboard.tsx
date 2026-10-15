@@ -15,6 +15,7 @@ import { DashboardStatsBar } from "@/components/dashboard/DashboardStats";
 import { EmptyLibrary } from "@/components/dashboard/EmptyLibrary";
 import { SquircleSearch } from "@/components/ui/SquircleSearch";
 import { SquircleButton } from "@/components/ui/SquircleButton";
+import { ThemedSelect } from "@/components/ui/ThemedSelect";
 import type { Course, DashboardStats, CourseCategory, CourseStatus } from "@/types";
 import { getCourses, getDashboardStats } from "@/lib/store";
 import { EASE, EASE_OUT } from "@/lib/constants";
@@ -313,17 +314,15 @@ export function Dashboard({ className }: DashboardProps) {
 
           <div className="ml-auto flex items-center gap-2">
             <SortAscending className="size-4 text-muted-foreground" />
-            <select
+            <ThemedSelect
+              variant="inline"
               value={sort}
-              onChange={(e) => setSort(e.target.value as SortOption)}
-              className="bg-transparent font-sans text-xs font-medium text-muted-foreground focus:outline-none"
-            >
-              {(Object.keys(sortLabels) as SortOption[]).map((s) => (
-                <option key={s} value={s}>
-                  {sortLabels[s]}
-                </option>
-              ))}
-            </select>
+              onChange={(v) => setSort(v as SortOption)}
+              options={(Object.keys(sortLabels) as SortOption[]).map((s) => ({
+                value: s,
+                label: sortLabels[s],
+              }))}
+            />
           </div>
         </div>
       </div>

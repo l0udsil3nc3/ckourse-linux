@@ -11,6 +11,8 @@
 }
 
 @custom-variant dark (&:is(.dark *));
+@custom-variant gnome (&:is(.gnome *));
+@custom-variant classic (&:is(.classic *));
 
 @theme inline {
     --font-sans: 'DM Sans', sans-serif;
@@ -142,6 +144,244 @@
     --gradient-spot: rgba(138, 180, 0, 0.07);
 }
 
+.classic {
+    --radius: 0.625rem;
+    /* Backgrounds — same as default */
+    --background: #0A0A0A;
+    --foreground: #EDEDED;
+    --card: #111214;
+    --card-foreground: #EDEDED;
+    --popover: #1A1C1F;
+    --popover-foreground: #EDEDED;
+    /* Primary — Nautilus Blue (instead of Electric Lime) */
+    --primary: #3584E4;
+    --primary-foreground: #FFFFFF;
+    /* Secondary */
+    --secondary: #1A1C1F;
+    --secondary-foreground: #EDEDED;
+    /* Muted */
+    --muted: #111214;
+    --muted-foreground: #7A7D85;
+    /* Accent */
+    --accent: #3584E4;
+    --accent-foreground: #FFFFFF;
+    /* Status */
+    --destructive: #FF6B6B;
+    --info: #5B9CF6;
+    --success: #3584E4;
+    /* Border / Input / Ring */
+    --border: #252729;
+    --input: #252729;
+    --ring: #3584E4;
+    /* Charts */
+    --chart-1: #3584E4;
+    --chart-2: #5B9CF6;
+    --chart-3: #FF6B6B;
+    --chart-4: #4A9EFF;
+    --chart-5: #7A7D85;
+    /* Sidebar */
+    --sidebar: #111214;
+    --sidebar-foreground: #EDEDED;
+    --sidebar-primary: #3584E4;
+    --sidebar-primary-foreground: #FFFFFF;
+    --sidebar-accent: #1A1C1F;
+    --sidebar-accent-foreground: #EDEDED;
+    --sidebar-border: #252729;
+    --sidebar-ring: #3584E4;
+    --gradient-spot: transparent;
+}
+
+.classic.light {
+    --background: #F5F5F5;
+    --foreground: #1A1A1A;
+    --card: #FFFFFF;
+    --card-foreground: #1A1A1A;
+    --popover: #FFFFFF;
+    --popover-foreground: #1A1A1A;
+    --primary: #3584E4;
+    --primary-foreground: #FFFFFF;
+    --secondary: #E8E8E8;
+    --secondary-foreground: #1A1A1A;
+    --muted: #F0F0F0;
+    --muted-foreground: #6B6E76;
+    --accent: #3584E4;
+    --accent-foreground: #FFFFFF;
+    --destructive: #E54D4D;
+    --info: #4A87E0;
+    --success: #3584E4;
+    --border: #D9DBDF;
+    --input: #D9DBDF;
+    --ring: #3584E4;
+    --chart-1: #3584E4;
+    --chart-2: #4A87E0;
+    --chart-3: #E54D4D;
+    --chart-4: #4A9EFF;
+    --chart-5: #6B6E76;
+    --sidebar: #FFFFFF;
+    --sidebar-foreground: #1A1A1A;
+    --sidebar-primary: #3584E4;
+    --sidebar-primary-foreground: #FFFFFF;
+    --sidebar-accent: #F0F0F0;
+    --sidebar-accent-foreground: #1A1A1A;
+    --sidebar-border: #D9DBDF;
+    --sidebar-ring: #3584E4;
+    --gradient-spot: transparent;
+}
+
+.gnome {
+    --radius: 0.75rem;
+    /* Backgrounds — Adwaita-inspired (light) */
+    --background: #F6F6F6;
+    --foreground: #1C1C1C;
+    --card: #FFFFFF;
+    --card-foreground: #1C1C1C;
+    --popover: #FFFFFF;
+    --popover-foreground: #1C1C1C;
+    /* Primary — Adwaita Blue */
+    --primary: #3584E4;
+    --primary-foreground: #FFFFFF;
+    /* Secondary */
+    --secondary: #E8E8E8;
+    --secondary-foreground: #1C1C1C;
+    /* Muted */
+    --muted: #F0F0F0;
+    --muted-foreground: #5C5C5C;
+    /* Accent */
+    --accent: #3584E4;
+    --accent-foreground: #FFFFFF;
+    /* Status */
+    --destructive: #E01B24;
+    --info: #3584E4;
+    --success: #2EC27E;
+    /* Border / Input / Ring */
+    --border: #D0D0D0;
+    --input: #D0D0D0;
+    --ring: #3584E4;
+    /* Charts */
+    --chart-1: #3584E4;
+    --chart-2: #E01B24;
+    --chart-3: #2EC27E;
+    --chart-4: #F7A300;
+    --chart-5: #5C5C5C;
+    /* Sidebar */
+    --sidebar: #FFFFFF;
+    --sidebar-foreground: #1C1C1C;
+    --sidebar-primary: #3584E4;
+    --sidebar-primary-foreground: #FFFFFF;
+    --sidebar-accent: #F0F0F0;
+    --sidebar-accent-foreground: #1C1C1C;
+    --sidebar-border: #D0D0D0;
+    --sidebar-ring: #3584E4;
+    --gradient-spot: transparent;
+}
+
+.dark.gnome {
+    --radius: 0.75rem;
+    /* Backgrounds — Nautilus-style dark (darker than before) */
+    --background: #171717;
+    --foreground: #E8E8E8;
+    --card: #1D1D1D;
+    --card-foreground: #E8E8E8;
+    --popover: #222222;
+    --popover-foreground: #E8E8E8;
+    /* Primary — Adwaita Blue (slightly muted for dark) */
+    --primary: #4A9EFF;
+    --primary-foreground: #171717;
+    /* Secondary */
+    --secondary: #252525;
+    --secondary-foreground: #E8E8E8;
+    /* Muted */
+    --muted: #252525;
+    --muted-foreground: #9A9A9A;
+    /* Accent */
+    --accent: #4A9EFF;
+    --accent-foreground: #171717;
+    /* Status */
+    --destructive: #F54242;
+    --info: #4A9EFF;
+    --success: #5ED68A;
+    /* Border / Input / Ring */
+    --border: #333333;
+    --input: #333333;
+    --ring: #4A9EFF;
+    /* Charts */
+    --chart-1: #4A9EFF;
+    --chart-2: #F54242;
+    --chart-3: #5ED68A;
+    --chart-4: #F7A300;
+    --chart-5: #9A9A9A;
+    /* Sidebar */
+    --sidebar: #1D1D1D;
+    --sidebar-foreground: #E8E8E8;
+    --sidebar-primary: #4A9EFF;
+    --sidebar-primary-foreground: #171717;
+    --sidebar-accent: #252525;
+    --sidebar-accent-foreground: #E8E8E8;
+    --sidebar-border: #333333;
+    --sidebar-ring: #4A9EFF;
+    --gradient-spot: transparent;
+}
+
+/* GNOME theme uses system font stack for native feel */
+.gnome {
+    --font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    --font-heading: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* Classic theme uses default font stack */
+.classic {
+    --font-sans: 'DM Sans', sans-serif;
+    --font-heading: 'Syne', sans-serif;
+}
+
+/* Remove gradient backdrop in Classic theme (only the radial gradient spot, not controls overlay) */
+.classic .bg-linear-to-br,
+.classic .bg-gradient-to-br,
+.classic [style*="gradient-spot"] {
+    background-image: none !important;
+}
+
+/* Ensure header and main backgrounds are solid in Classic */
+.classic header,
+.classic main {
+    background-image: none !important;
+}
+
+/* GNOME theme: remove gradient spot only */
+.gnome .bg-linear-to-br,
+.gnome .bg-gradient-to-br,
+.gnome [style*="gradient-spot"] {
+    background-image: none !important;
+}
+
+.gnome header,
+.gnome main {
+    background-image: none !important;
+}
+
+/* Dropdown menus are custom-rendered (ThemedSelect) so no native select hacks needed. */
+
+/* Remove gradient backdrop in GNOME theme */
+.gnome .bg-linear-to-t,
+.gnome .bg-linear-to-r,
+.gnome .bg-linear-to-b,
+.gnome .bg-linear-to-br,
+.gnome .bg-gradient-to-t,
+.gnome .bg-gradient-to-r,
+.gnome .bg-gradient-to-b,
+.gnome .bg-gradient-to-br,
+.gnome [style*="linear-gradient"],
+.gnome [style*="radial-gradient"],
+.gnome [style*="gradient-spot"] {
+    background-image: none !important;
+}
+
+/* Ensure header and main backgrounds are solid in GNOME */
+.gnome header,
+.gnome main {
+    background-image: none !important;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -168,9 +408,11 @@
     background: transparent;
     }
   html {
+    color-scheme: dark;
     background-color: #0A0A0A;
     }
   html.light {
+    color-scheme: light;
     background-color: #F5F5F5;
     }
   body {
