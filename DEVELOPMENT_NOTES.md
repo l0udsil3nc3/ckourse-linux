@@ -102,8 +102,22 @@ The main implementation is in `src-tauri/src/db.rs`,
 
 ## Known issues and unverified areas
 
-- **Seeking can flicker.** Playback works, but the visual flicker during seek
-  remains unresolved and needs a focused reproduction/investigation.
+- **Seeking flashes once per seek (mitigated, at the platform floor).** Every
+  `currentTime` write is a flushing seek: the GStreamer sink drops its buffers
+  and paints nothing until the first frame after the new position decodes.
+  Measured on 720p H.264 course content (8 s keyframe interval, VA-API decode),
+  re-prime takes ~12 ms per second of distance from the previous keyframe
+  (~50–90 ms typical) — it is forward-decoding through the GOP, confirmed by a
+  linear seek-timing correlation in a replicated playbin pipeline, identical
+  with hardware and software decoders. The seek bar therefore commits once on
+  mouseup instead of scrubbing live, so a drag produces one flash instead of a
+  strobe, and a dim-veil pulse (raised with each seek, pre-dimming during
+  drags) makes the remaining flash read as intentional buffering rather than a
+  glitch. A freeze-frame cover was attempted and abandoned: both `drawImage`
+  and `createImageBitmap` silently read back nothing on this pipeline, so there
+  is no frame to cover the gap with. Shortening the flash further would require
+  shorter GOPs in the content (re-encode) or a sink that holds its last frame
+  (WebKit internals) — neither is reachable from the app.
 - **DEB and RPM are not functionally tested.** Tauri generated these bundles,
   but they have not been installed and exercised on a clean system. Do not
   treat generation as validation.
@@ -137,7 +151,8 @@ The main implementation is in `src-tauri/src/db.rs`,
 
 ## Suggested follow-up
 
-1. Reproduce and fix the seek flicker without regressing stream seeking.
+1. The seek flash is characterized (see above); no further action unless
+   re-encoding content with short GOPs or patching WebKit is on the table.
 2. Install and test the DEB and RPM packages in clean environments, or clearly
    document that only the AppImage is a supported/tested deliverable.
 3. Run the cross-course progress/notes scenarios above against a disposable

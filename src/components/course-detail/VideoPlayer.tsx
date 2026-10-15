@@ -230,10 +230,53 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
   const hideTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
   const seekBarRef = useRef<HTMLDivElement>(null);
 
+  // Dim-veil pulse that softens the seek flash. Every `currentTime` write is a
+  // flushing seek and the sink cuts to black for ~50-100 ms; raising a brief
+  // translucent dim in the same tick gives the eye a smooth transition to
+  // track instead of the hard cut. The veil also starts easing in on seek-bar
+  // mousedown, so by release time the video is already dimmed and the cut
+  // itself is a smaller step. It is purely cosmetic — translucent, so exact
+  // hide timing isn't critical.
+  const [seekVeil, setSeekVeil] = useState(false);
+  const veilTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Single write path for all seeks (scrub release, buttons, keys, API).
+  // Skips no-op targets: a seek that doesn't move the playhead fires no media
+  // events, so nothing would ever release the veil.
+  const raiseVeil = useCallback(() => {
+    if (veilTimerRef.current) clearTimeout(veilTimerRef.current);
+    setSeekVeil(true);
+    // Hard cap so a `seeked` that never arrives can't leave the dim stuck on.
+    veilTimerRef.current = setTimeout(() => setSeekVeil(false), 1000);
+  }, []);
+
+  const commitSeek = useCallback(
+    (target: number) => {
+      const v = videoRef.current;
+      if (!v || !Number.isFinite(target)) return;
+      const clamped = Math.max(0, Math.min(v.duration || 0, target));
+      if (Math.abs(clamped - v.currentTime) < 0.005) return;
+      raiseVeil();
+      v.currentTime = clamped;
+    },
+    [raiseVeil],
+  );
+
+  const releaseVeilSoon = useCallback(() => {
+    if (veilTimerRef.current) clearTimeout(veilTimerRef.current);
+    // The sink typically presents the new frame within ~100 ms of `seeked`;
+    // the veil fades out over 150 ms from here, overlapping the return.
+    veilTimerRef.current = setTimeout(() => setSeekVeil(false), 100);
+  }, []);
+
+  useEffect(() => () => {
+    if (veilTimerRef.current) clearTimeout(veilTimerRef.current);
+  }, []);
+
   useImperativeHandle(ref, () => ({
     seekTo(seconds: number) {
       if (videoRef.current) {
-        videoRef.current.currentTime = seconds;
+        commitSeek(seconds);
         setVideoTime(seconds);
         onTimeUpdate?.(seconds);
       }
@@ -243,7 +286,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
         videoRef.current.pause();
       }
     },
-  }), [onTimeUpdate]);
+  }), [commitSeek, onTimeUpdate]);
 
   const [videoTime, setVideoTime] = useState(0);
   const [videoDuration, setVideoDuration] = useState(0);
@@ -311,6 +354,8 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
   // Reset auto-skip cancelled state when lesson changes
   useEffect(() => {
     setAutoSkipCancelled(false);
+    if (veilTimerRef.current) clearTimeout(veilTimerRef.current);
+    setSeekVeil(false);
   }, [lesson?.id]);
 
   // Persist subtitle style to localStorage
@@ -498,12 +543,12 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
           break;
         case "ArrowLeft":
           e.preventDefault();
-          v.currentTime = Math.max(0, v.currentTime - skipSeconds);
+          commitSeek(v.currentTime - skipSeconds);
           resetHideTimer();
           break;
         case "ArrowRight":
           e.preventDefault();
-          v.currentTime = Math.min(v.duration, v.currentTime + skipSeconds);
+          commitSeek(v.currentTime + skipSeconds);
           resetHideTimer();
           break;
         case "ArrowUp":
@@ -533,12 +578,12 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
           break;
         case "j":
           e.preventDefault();
-          v.currentTime = Math.max(0, v.currentTime - skipSeconds);
+          commitSeek(v.currentTime - skipSeconds);
           resetHideTimer();
           break;
         case "l":
           e.preventDefault();
-          v.currentTime = Math.min(v.duration, v.currentTime + skipSeconds);
+          commitSeek(v.currentTime + skipSeconds);
           resetHideTimer();
           break;
         case "c":
@@ -691,32 +736,26 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
 
   const skipForward = useCallback(() => {
     if (!videoRef.current) return;
-    videoRef.current.currentTime = Math.min(
-      videoRef.current.duration,
-      videoRef.current.currentTime + skipSeconds,
-    );
+    commitSeek(videoRef.current.currentTime + skipSeconds);
     resetHideTimer();
-  }, [resetHideTimer]);
+  }, [commitSeek, resetHideTimer, skipSeconds]);
 
   const skipBackward = useCallback(() => {
     if (!videoRef.current) return;
-    videoRef.current.currentTime = Math.max(
-      0,
-      videoRef.current.currentTime - skipSeconds,
-    );
+    commitSeek(videoRef.current.currentTime - skipSeconds);
     resetHideTimer();
-  }, [resetHideTimer]);
+  }, [commitSeek, resetHideTimer, skipSeconds]);
 
   const handleReplay = useCallback(() => {
     if (!videoRef.current) return;
-    videoRef.current.currentTime = 0;
+    commitSeek(0);
     safePlay(videoRef.current, {
       trigger: "replay",
       lessonId: lesson?.id,
       videoPath: lesson?.videoPath,
     });
     setHasEnded(false);
-  }, [lesson?.id, lesson?.videoPath]);
+  }, [commitSeek, lesson?.id, lesson?.videoPath]);
 
   const handleDoubleClick = useCallback(() => {
     toggleFullscreen();
@@ -920,25 +959,31 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
       e.preventDefault();
       setIsSeeking(true);
       isSeekingRef.current = true;
+      // Pre-dim while aiming: the video keeps playing underneath, and by
+      // release time the cut to black starts from dimmed instead of full
+      // brightness. Released by the mouseup below (or `seeked` for real seeks).
+      raiseVeil();
 
-      const commit = (r: number) => {
-        if (videoRef.current) videoRef.current.currentTime = r * videoDuration;
-      };
+      // Commit once, on release. Every `currentTime` write is a flushing seek
+      // that blanks the video until the next frame decodes, and this
+      // pipeline's frames can't be snapshotted to cover the gap (neither
+      // drawImage nor createImageBitmap read anything back), so scrubbing live
+      // reads as a black strobe for the whole drag. The drag still owns the
+      // playhead display throughout; the video jumps once at the end.
       let ratio = getSeekRatio(e);
       setVideoTime(ratio * videoDuration);
-      // Local files scrub live. Remote sources commit only on release — every
-      // scrub position would otherwise fire its own network fetches, and on a
-      // slow connection those bury the position the user actually lands on.
-      if (!isRemoteSource) commit(ratio);
 
       const handleMouseMove = (ev: MouseEvent) => {
         ratio = getSeekRatio(ev);
         setVideoTime(ratio * videoDuration);
-        if (!isRemoteSource) commit(ratio);
       };
 
       const handleMouseUp = () => {
-        commit(ratio);
+        commitSeek(ratio * videoDuration);
+        // Also release here: a no-op commit raises nothing and fires no
+        // `seeked`, so without this the pre-dim from mousedown would linger to
+        // the hard cap. Harmless for real seeks — `seeked` re-arms right after.
+        releaseVeilSoon();
         setIsSeeking(false);
         isSeekingRef.current = false;
         window.removeEventListener("mousemove", handleMouseMove);
@@ -948,7 +993,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
       window.addEventListener("mousemove", handleMouseMove);
       window.addEventListener("mouseup", handleMouseUp);
     },
-    [videoDuration, isRemoteSource],
+    [commitSeek, raiseVeil, releaseVeilSoon, videoDuration],
   );
 
   const handleSeekHover = useCallback(
@@ -1043,6 +1088,8 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
         onSeeking={() => setIsBuffering(true)}
         onSeeked={() => {
           updateBuffered();
+          // Release the dim-veil pulse once the sink is re-priming.
+          releaseVeilSoon();
           // A seek that lands while the watchdog is waiting for data keeps the
           // spinner up until the runway refills.
           setIsBuffering(starvedRef.current);
@@ -1064,6 +1111,18 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
           });
           void surfaceLoadError();
         }}
+      />
+
+      {/* Dim-veil pulse that softens the seek flash (see commitSeek). Above the
+          video so the black gap reads as part of a smooth dim, below subtitles
+          and controls so both stay bright. pointer-events-none so clicks still
+          reach the video. */}
+      <div
+        aria-hidden
+        className={cn(
+          "pointer-events-none absolute inset-0 bg-black/40 transition-opacity duration-150 ease-out",
+          seekVeil ? "opacity-100" : "opacity-0",
+        )}
       />
 
       {activeCueText && (
