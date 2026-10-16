@@ -10,7 +10,7 @@
       // the default theme on startup. Mirrors src/hooks/useTheme.ts.
       (function () {
         try {
-          var family = "default";
+          var family = "legacy";
           var mode = "dark";
           var raw = localStorage.getItem("ckourse-theme");
           if (raw) {
@@ -19,9 +19,13 @@
               if (
                 p &&
                 typeof p === "object" &&
-                (p.family === "default" || p.family === "gnome" || p.family === "classic")
+                (p.family === "legacy" ||
+                  // Migrate the pre-rename "default" value.
+                  p.family === "default" ||
+                  p.family === "gnome" ||
+                  p.family === "classic")
               ) {
-                family = p.family;
+                family = p.family === "default" ? "legacy" : p.family;
               }
               if (p && typeof p === "object" && (p.mode === "light" || p.mode === "dark")) {
                 mode = p.mode;
@@ -34,7 +38,7 @@
           }
           var cl = document.documentElement.classList;
           cl.remove("light", "dark", "gnome", "classic");
-          if (family !== "default") cl.add(family);
+          if (family !== "legacy") cl.add(family);
           cl.add(mode);
         } catch (e) {
           // localStorage unavailable — defaults stay

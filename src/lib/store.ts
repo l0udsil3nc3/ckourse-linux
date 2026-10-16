@@ -101,6 +101,16 @@ export async function setLastWatched(
   return invoke("set_last_watched", { courseId, lessonId });
 }
 
+export interface ResumeTarget {
+  courseId: number;
+  lessonId: number;
+}
+
+/** The last-played lesson across the library, if anything was played yet. */
+export async function getResumeTarget(): Promise<ResumeTarget | null> {
+  return invoke<ResumeTarget | null>("get_resume_target");
+}
+
 export async function getAllNotes(): Promise<NoteWithCourse[]> {
   return invoke<NoteWithCourse[]>("get_all_notes");
 }

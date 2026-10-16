@@ -10,6 +10,8 @@ const DEFAULTS: AppSettings = {
   default_volume: 100,
   skip_forward_secs: 10,
   skip_backward_secs: 10,
+  type_to_search: false,
+  show_stats: true,
 };
 
 export const AUTOPLAY_DELAY_MAX = 15;
@@ -31,6 +33,8 @@ function parse(raw: Record<string, string>): AppSettings {
     default_volume: Number(raw.default_volume) || 100,
     skip_forward_secs: Number(raw.skip_forward_secs) || 10,
     skip_backward_secs: Number(raw.skip_backward_secs) || 10,
+    type_to_search: raw.type_to_search === "true",
+    show_stats: raw.show_stats !== "false",
   };
 }
 

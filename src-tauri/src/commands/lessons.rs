@@ -21,6 +21,14 @@ pub fn set_last_watched(
 }
 
 #[tauri::command]
+pub fn get_resume_target(
+    state: tauri::State<'_, DbState>,
+) -> Result<Option<db::ResumeTarget>, String> {
+    let conn = state.conn.lock().map_err(|e| e.to_string())?;
+    db::get_resume_target(&conn).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 pub fn save_lesson_position(
     state: tauri::State<'_, DbState>,
     lesson_id: i64,

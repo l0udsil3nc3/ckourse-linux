@@ -6,4 +6,6 @@ export interface AppSettings {
   default_volume: number;
   skip_forward_secs: number;
   skip_backward_secs: number;
+  type_to_search: boolean;
+  show_stats: boolean;
 }

@@ -29,6 +29,8 @@ import {
   PaletteIcon as Palette,
   MoonIcon as Moon,
   SunIcon as Sun,
+  KeyboardIcon as Keyboard,
+  ChartBarIcon as ChartBar,
 } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import type { LibraryStats } from "@/types";
@@ -212,13 +214,14 @@ const SKIP_OPTIONS: SelectOption[] = [
 ];
 
 const FAMILY_OPTIONS: SelectOption[] = [
-  { value: "default", label: "Default" },
+  { value: "legacy", label: "Legacy" },
   { value: "classic", label: "Classic" },
   { value: "gnome", label: "GNOME" },
 ];
 
 function AppearanceSection({ index }: { index: number }) {
   const { family, mode, setFamily } = useTheme();
+  const { settings, update } = useSettings();
 
   return (
     <SectionCard
@@ -237,7 +240,7 @@ function AppearanceSection({ index }: { index: number }) {
       >
         <ThemedSelect
           value={family}
-          onChange={(v) => setFamily(v as "default" | "classic" | "gnome")}
+          onChange={(v) => setFamily(v as "legacy" | "classic" | "gnome")}
           options={FAMILY_OPTIONS}
         />
       </SettingRow>
@@ -247,6 +250,26 @@ function AppearanceSection({ index }: { index: number }) {
         description="Use the header toggle to switch between light and dark"
       >
         <span className="font-sans text-sm text-muted-foreground capitalize">{mode}</span>
+      </SettingRow>
+      <SettingRow
+        icon={<Keyboard className="size-4" />}
+        label="Type to search"
+        description="Start typing on the dashboard to open search"
+      >
+        <Toggle
+          checked={settings.type_to_search}
+          onChange={(v) => update("type_to_search", String(v))}
+        />
+      </SettingRow>
+      <SettingRow
+        icon={<ChartBar className="size-4" />}
+        label="Dashboard stats"
+        description="Show the stats row on the dashboard"
+      >
+        <Toggle
+          checked={settings.show_stats}
+          onChange={(v) => update("show_stats", String(v))}
+        />
       </SettingRow>
     </SectionCard>
   );

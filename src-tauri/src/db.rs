@@ -109,6 +109,34 @@ pub struct SearchResult {
     pub lesson_title: Option<String>,
 }
 
+/// The single lesson to resume: the last-watched lesson of the most
+/// recently watched course. `None` when nothing has been played yet.
+#[derive(Debug, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct ResumeTarget {
+    pub course_id: i64,
+    pub lesson_id: i64,
+}
+
+pub fn get_resume_target(conn: &Connection) -> SqlResult<Option<ResumeTarget>> {
+    let mut stmt = conn.prepare(
+        "SELECT s.course_id, l.id
+         FROM lessons l
+         JOIN sections s ON s.id = l.section_id
+         JOIN courses c ON c.id = s.course_id
+         WHERE l.is_last_watched = 1
+         ORDER BY c.last_watched DESC
+         LIMIT 1",
+    )?;
+    let mut rows = stmt.query_map([], |row| {
+        Ok(ResumeTarget {
+            course_id: row.get(0)?,
+            lesson_id: row.get(1)?,
+        })
+    })?;
+    Ok(rows.next().transpose()?)
+}
+
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Subtitle {

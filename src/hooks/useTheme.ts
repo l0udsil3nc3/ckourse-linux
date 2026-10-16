@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
 
-type ThemeFamily = "default" | "gnome" | "classic";
+type ThemeFamily = "legacy" | "gnome" | "classic";
 type ThemeMode = "light" | "dark";
 
 function getFamily(): ThemeFamily {
   if (document.documentElement.classList.contains("gnome")) return "gnome";
   if (document.documentElement.classList.contains("classic")) return "classic";
-  return "default";
+  return "legacy";
 }
 
 function getMode(): ThemeMode {
@@ -38,17 +38,22 @@ function readStoredPreference(): { family: ThemeFamily; mode: ThemeMode } | null
     if (
       parsed &&
       typeof parsed === "object" &&
-      (parsed.family === "default" ||
+      (parsed.family === "legacy" ||
+        // Migrate the pre-rename "default" value.
+        parsed.family === "default" ||
         parsed.family === "gnome" ||
         parsed.family === "classic") &&
       (parsed.mode === "light" || parsed.mode === "dark")
     ) {
-      return { family: parsed.family, mode: parsed.mode };
+      return {
+        family: parsed.family === "default" ? "legacy" : parsed.family,
+        mode: parsed.mode,
+      };
     }
   } catch {
     // Fallback for old format
     if (stored === "light" || stored === "dark" || stored === "gnome" || stored === "gnome-dark") {
-      const family = (stored === "gnome" || stored === "gnome-dark") ? "gnome" : "default";
+      const family = (stored === "gnome" || stored === "gnome-dark") ? "gnome" : "legacy";
       const mode = (stored === "light" || stored === "gnome") ? "light" : "dark";
       return { family, mode };
     }
@@ -58,7 +63,7 @@ function readStoredPreference(): { family: ThemeFamily; mode: ThemeMode } | null
 
 function getStoredTheme(): { family: ThemeFamily; mode: ThemeMode } {
   // The saved preference wins — this is what makes a chosen theme survive
-  // restarts instead of snapping back to the default.
+  // restarts instead of snapping back to the built-in one.
   const stored = readStoredPreference();
   if (stored) return stored;
 
@@ -67,13 +72,13 @@ function getStoredTheme(): { family: ThemeFamily; mode: ThemeMode } {
   if (typeof document !== "undefined") {
     return { family: getFamily(), mode: getMode() };
   }
-  return { family: "default", mode: "dark" };
+  return { family: "legacy", mode: "dark" };
 }
 
 export function useTheme() {
   const [{ family, mode }, setThemeState] = useState<{ family: ThemeFamily; mode: ThemeMode }>(() => {
     // Apply during initialization (not in an effect) so the correct theme is
-    // on the DOM before the first paint — no flash of the default theme.
+    // on the DOM before the first paint — no flash of the built-in theme.
     const initial = getStoredTheme();
     applyTheme(initial.family, initial.mode);
     return initial;
@@ -121,7 +126,7 @@ export function useTheme() {
   }, []);
 
   // For backward compatibility, expose combined theme string
-  const theme = `${family}${mode === "dark" ? "-dark" : mode === "light" ? "-light" : ""}`.replace("default-", "").replace("-light", "") || (family === "default" ? (mode === "dark" ? "dark" : "light") : (mode === "dark" ? "gnome-dark" : "gnome"));
+  const theme = `${family}${mode === "dark" ? "-dark" : mode === "light" ? "-light" : ""}`.replace("legacy-", "").replace("-light", "") || (family === "legacy" ? (mode === "dark" ? "dark" : "light") : (mode === "dark" ? "gnome-dark" : "gnome"));
 
   return { 
     theme, 
