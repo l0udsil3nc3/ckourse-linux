@@ -247,6 +247,23 @@ function CourseDetailInner({
     }
   }, [initialLessonId]);
 
+  // Landing from search/favorites/notes (?lesson=): pin the active folder
+  // to the top of the curriculum. Rect math keeps the scroll inside the
+  // curriculum container instead of moving the page. Later lesson moves
+  // still follow the active folder via the accordion's nearest-scroll.
+  useEffect(() => {
+    if (!initialLessonId) return;
+    const container = curriculumRef.current;
+    const target = container?.querySelector<HTMLElement>(
+      "[data-active-section='true']",
+    );
+    if (container && target) {
+      const containerTop = container.getBoundingClientRect().top;
+      const targetTop = target.getBoundingClientRect().top;
+      container.scrollTop += targetTop - containerTop;
+    }
+  }, [initialLessonId]);
+
   const activeLesson = allLessons.find((l) => l.id === activeLessonId) ?? allLessons[0];
   const [subtitles, setSubtitles] = useState<Subtitle[]>([]);
   const [mounted, setMounted] = useState(false);
@@ -271,6 +288,7 @@ function CourseDetailInner({
   } | null>(null);
   const [showCelebration, setShowCelebration] = useState(false);
   const prevCompletedRef = useRef(course.completedLessons);
+  const curriculumRef = useRef<HTMLDivElement>(null);
 
   const handleTimeUpdate = useCallback((time: number) => {
     setVideoTime(time);
@@ -374,6 +392,16 @@ function CourseDetailInner({
     (playing: boolean) => {
       if (playing) {
         setAutoPlay(false);
+        // Mark what's actually playing as last-watched. Search landings and
+        // initial-lesson playback never pass through the select handlers, so
+        // without this the resume target goes stale behind the live video.
+        if (activeLesson) {
+          setLastWatched(course.id, activeLesson.id).catch((err) =>
+            reportError(err, "CourseDetail.handlePlayStateChange", {
+              lessonId: activeLesson.id,
+            }),
+          );
+        }
       }
       if (!playing && activeLesson && videoTimeRef.current > 0) {
         saveLessonPosition(activeLesson.id, videoTimeRef.current).catch((err) =>
@@ -384,7 +412,7 @@ function CourseDetailInner({
         );
       }
     },
-    [activeLesson?.id],
+    [activeLesson?.id, course.id],
   );
 
   const handleNextLesson = useCallback(async () => {
@@ -908,7 +936,7 @@ function CourseDetailInner({
                 {course.completedLessons}/{course.totalLessons}
               </span>
             </div>
-            <div className="flex-1 overflow-y-auto">
+            <div ref={curriculumRef} className="flex-1 overflow-y-auto">
               {courseData.sections.map((section) => (
                 <SectionAccordion
                   key={section.id}

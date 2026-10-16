@@ -49,7 +49,10 @@ export function SectionAccordion({
   );
 
   return (
-    <div className="border-b border-border last:border-b-0">
+    <div
+      className="border-b border-border last:border-b-0"
+      data-active-section={hasActiveLesson || undefined}
+    >
       <button
         ref={headerRef}
         onClick={() => setOpen((v) => !v)}

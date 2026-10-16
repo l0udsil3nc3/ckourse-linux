@@ -264,7 +264,9 @@ export function SidebarSearch({ collapsed }: SidebarSearchProps) {
           {/* fill layer */}
           <div className="squircle-subtle absolute inset-px bg-card" />
 
-          <div className="relative">
+          {/* Clipped to the same squircle so row highlights can't bleed
+              past the overlay's rounded edges. */}
+          <div className="squircle-subtle relative">
             {/* Search input row */}
             <div className="flex items-center gap-3 px-4 py-3.5">
               <MagnifyingGlass className="size-4 shrink-0 text-muted-foreground" />

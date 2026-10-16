@@ -128,7 +128,7 @@ export function ShortcutsDialog({ className }: { className?: string }) {
                 </div>
                 {group.items.map((item) => (
                   <div
-                    key={item.action}
+                    key={`${item.action} — ${item.keys.join(" + ")}`}
                     className="flex items-center justify-between gap-3 py-1.5"
                   >
                     <span className="font-sans text-xs text-muted-foreground">

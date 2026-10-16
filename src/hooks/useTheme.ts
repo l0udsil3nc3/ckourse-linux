@@ -67,12 +67,20 @@ function getStoredTheme(): { family: ThemeFamily; mode: ThemeMode } {
   const stored = readStoredPreference();
   if (stored) return stored;
 
-  // Nothing stored yet: keep whatever is already on the DOM (an early boot
+  // Nothing stored: keep whatever is already on the DOM (an early boot
   // script in index.html may have set it), else the built-in defaults.
   if (typeof document !== "undefined") {
+    // Fresh install (no saved preference at all): classic is the default.
+    // A corrupt stored value falls through to whatever the DOM already has.
+    if (
+      typeof localStorage !== "undefined" &&
+      localStorage.getItem("ckourse-theme") === null
+    ) {
+      return { family: "classic", mode: getMode() };
+    }
     return { family: getFamily(), mode: getMode() };
   }
-  return { family: "legacy", mode: "dark" };
+  return { family: "classic", mode: "dark" };
 }
 
 export function useTheme() {

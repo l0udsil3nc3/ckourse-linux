@@ -25,11 +25,7 @@ type SortOption = "recent" | "progress" | "title";
 
 const builtinCategoryLabels: Record<CourseCategory | "all", string> = {
   all: "All",
-  frontend: "Frontend",
-  backend: "Backend",
-  devops: "DevOps",
-  database: "Database",
-  design: "Design",
+  medicine: "Medicine",
   other: "Other",
 };
 
@@ -65,6 +61,7 @@ export function Dashboard({ className }: DashboardProps) {
   const [filterHeight, setFilterHeight] = useState(0);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const cardRefs = useRef(new Map<number, HTMLDivElement>());
+  const gridRef = useRef<HTMLDivElement>(null);
   const activePath = useContext(ActivePathContext);
   const isVisible = activePath === "/";
   const location = useLocation();
@@ -205,6 +202,16 @@ export function Dashboard({ className }: DashboardProps) {
     setSelectedIndex(-1);
   }, [search, category, status, sort, bookmarkFilter]);
 
+  // No course starts highlighted — not on startup, not when coming back.
+  // The highlight appears only once an arrow key is pressed.
+  const wasVisibleRef = useRef(isVisible);
+  useEffect(() => {
+    if (isVisible && !wasVisibleRef.current) {
+      setSelectedIndex(-1);
+    }
+    wasVisibleRef.current = isVisible;
+  }, [isVisible]);
+
   // Arrow keys move a selection across the visible courses; Enter opens it.
   // Gated on visibility: keep-alive leaves this page mounted in the
   // background, and its keys must stay dead while hidden.
@@ -238,14 +245,33 @@ export function Dashboard({ className }: DashboardProps) {
           .catch(() => {});
         return;
       }
-      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      if (
+        e.key === "ArrowDown" ||
+        e.key === "ArrowUp" ||
+        e.key === "ArrowLeft" ||
+        e.key === "ArrowRight"
+      ) {
         e.preventDefault();
+        // Live column count so left/right/up/down follow the visual grid
+        // at any responsive breakpoint.
+        const el = gridRef.current;
+        const cols = el
+          ? Math.max(
+              1,
+              window.getComputedStyle(el).gridTemplateColumns.split(" ").length,
+            )
+          : 1;
         setSelectedIndex((i) => {
           const len = filteredCourses.length;
           if (len === 0) return -1;
-          if (e.key === "ArrowDown") return i >= len - 1 ? len - 1 : i + 1;
-          if (i === -1) return len - 1;
-          return i <= 0 ? 0 : i - 1;
+          // Selection always starts top-left, whichever arrow opens it.
+          if (i === -1) return 0;
+          let next = i;
+          if (e.key === "ArrowDown") next = i + cols;
+          else if (e.key === "ArrowUp") next = i - cols;
+          else if (e.key === "ArrowRight") next = i + 1;
+          else next = i - 1;
+          return Math.min(Math.max(next, 0), len - 1);
         });
       } else if (e.key === "Enter" && selectedIndex >= 0) {
         const course = filteredCourses[selectedIndex];
@@ -423,7 +449,7 @@ export function Dashboard({ className }: DashboardProps) {
       </div>
 
       {filteredCourses.length > 0 ? (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div ref={gridRef} className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filteredCourses.map((course, index) => (
             <div
               key={course.id}

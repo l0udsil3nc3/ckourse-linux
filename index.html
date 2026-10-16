@@ -13,6 +13,7 @@
           var family = "legacy";
           var mode = "dark";
           var raw = localStorage.getItem("ckourse-theme");
+          var hasStored = raw !== null;
           if (raw) {
             try {
               var p = JSON.parse(raw);
@@ -37,6 +38,10 @@
             }
           }
           var cl = document.documentElement.classList;
+          if (!hasStored) {
+            // Fresh install: classic is the default family.
+            family = "classic";
+          }
           cl.remove("light", "dark", "gnome", "classic");
           if (family !== "legacy") cl.add(family);
           cl.add(mode);

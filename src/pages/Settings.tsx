@@ -214,9 +214,9 @@ const SKIP_OPTIONS: SelectOption[] = [
 ];
 
 const FAMILY_OPTIONS: SelectOption[] = [
-  { value: "legacy", label: "Legacy" },
   { value: "classic", label: "Classic" },
   { value: "gnome", label: "GNOME" },
+  { value: "legacy", label: "Legacy" },
 ];
 
 function AppearanceSection({ index }: { index: number }) {
