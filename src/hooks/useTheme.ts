@@ -28,31 +28,56 @@ function applyTheme(family: ThemeFamily, mode: ThemeMode) {
   document.documentElement.classList.add(mode);
 }
 
-function getStoredTheme(): { family: ThemeFamily; mode: ThemeMode } {
-  if (typeof document === "undefined") {
-    const stored = localStorage.getItem("ckourse-theme");
-    if (stored) {
-      try {
-        return JSON.parse(stored);
-      } catch {
-        // Fallback for old format
-        if (stored === "light" || stored === "dark" || stored === "gnome" || stored === "gnome-dark") {
-          const family = (stored === "gnome" || stored === "gnome-dark") ? "gnome" : "default";
-          const mode = (stored === "light" || stored === "gnome") ? "light" : "dark";
-          return { family, mode };
-        }
-      }
+function readStoredPreference(): { family: ThemeFamily; mode: ThemeMode } | null {
+  if (typeof localStorage === "undefined") return null;
+  const stored = localStorage.getItem("ckourse-theme");
+  if (!stored) return null;
+
+  try {
+    const parsed = JSON.parse(stored);
+    if (
+      parsed &&
+      typeof parsed === "object" &&
+      (parsed.family === "default" ||
+        parsed.family === "gnome" ||
+        parsed.family === "classic") &&
+      (parsed.mode === "light" || parsed.mode === "dark")
+    ) {
+      return { family: parsed.family, mode: parsed.mode };
     }
-    return { family: "default", mode: "dark" };
+  } catch {
+    // Fallback for old format
+    if (stored === "light" || stored === "dark" || stored === "gnome" || stored === "gnome-dark") {
+      const family = (stored === "gnome" || stored === "gnome-dark") ? "gnome" : "default";
+      const mode = (stored === "light" || stored === "gnome") ? "light" : "dark";
+      return { family, mode };
+    }
   }
-  
-  return { family: getFamily(), mode: getMode() };
+  return null;
+}
+
+function getStoredTheme(): { family: ThemeFamily; mode: ThemeMode } {
+  // The saved preference wins — this is what makes a chosen theme survive
+  // restarts instead of snapping back to the default.
+  const stored = readStoredPreference();
+  if (stored) return stored;
+
+  // Nothing stored yet: keep whatever is already on the DOM (an early boot
+  // script in index.html may have set it), else the built-in defaults.
+  if (typeof document !== "undefined") {
+    return { family: getFamily(), mode: getMode() };
+  }
+  return { family: "default", mode: "dark" };
 }
 
 export function useTheme() {
-  const [{ family, mode }, setThemeState] = useState<{ family: ThemeFamily; mode: ThemeMode }>(() => 
-    getStoredTheme()
-  );
+  const [{ family, mode }, setThemeState] = useState<{ family: ThemeFamily; mode: ThemeMode }>(() => {
+    // Apply during initialization (not in an effect) so the correct theme is
+    // on the DOM before the first paint — no flash of the default theme.
+    const initial = getStoredTheme();
+    applyTheme(initial.family, initial.mode);
+    return initial;
+  });
 
   const setFamily = useCallback((newFamily: ThemeFamily) => {
     setThemeState(prev => {

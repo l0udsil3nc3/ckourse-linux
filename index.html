@@ -5,6 +5,42 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Tauri + React + Typescript</title>
+    <script>
+      // Apply the saved theme before anything paints so the app never flashes
+      // the default theme on startup. Mirrors src/hooks/useTheme.ts.
+      (function () {
+        try {
+          var family = "default";
+          var mode = "dark";
+          var raw = localStorage.getItem("ckourse-theme");
+          if (raw) {
+            try {
+              var p = JSON.parse(raw);
+              if (
+                p &&
+                typeof p === "object" &&
+                (p.family === "default" || p.family === "gnome" || p.family === "classic")
+              ) {
+                family = p.family;
+              }
+              if (p && typeof p === "object" && (p.mode === "light" || p.mode === "dark")) {
+                mode = p.mode;
+              }
+            } catch (e) {
+              // Legacy single-string format
+              if (raw === "gnome" || raw === "gnome-dark") family = "gnome";
+              mode = raw === "light" || raw === "gnome" ? "light" : "dark";
+            }
+          }
+          var cl = document.documentElement.classList;
+          cl.remove("light", "dark", "gnome", "classic");
+          if (family !== "default") cl.add(family);
+          cl.add(mode);
+        } catch (e) {
+          // localStorage unavailable — defaults stay
+        }
+      })();
+    </script>
   </head>
 
   <body>
