@@ -168,3 +168,13 @@ The main implementation is in `src-tauri/src/db.rs`,
 5. If AppImage is the only required deliverable, consider an AppImage-only
    build mode; it was measured substantially faster, but the current build
    script still requests all Tauri bundle formats.
+6. Landing page (post-2.0): update the README to state this is a Linux-only
+   fork (Windows/Mac users go to the original redaantar/ckourse), with a
+   feature/fix list of everything implemented over the original app. State
+   up front that Google Drive and remote-server sources do not work on
+   Linux yet — local folders only.
+7. Consider adding screenshots to the README (dashboard, course view,
+   search) when the landing page is reworked. Inspo: Deskemy's README
+   (NFRohan) — one hero library screenshot up top, a collapsible "More
+   screenshots" grid (course view, player, fullscreen, shortcuts, search),
+   then a grouped Features list (Library & import, …).
