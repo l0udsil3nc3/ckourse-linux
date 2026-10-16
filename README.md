@@ -59,7 +59,14 @@ Your media player doesn't know what "Section 4 - Lesson 12" means. Your file man
 
 ## Download
 
-This fork has not published its own release artifacts yet. See [upstream Ckourse releases](https://github.com/redaantar/ckourse/releases) for upstream builds.
+This is a **Linux-only** fork, distributed as an AppImage (no deb/rpm).
+Grab the latest `Ckourse_Linux_*_amd64.AppImage` plus `SHA256SUMS` from
+[ckourse-linux releases](https://github.com/l0udsil3nc3/ckourse-linux/releases)
+and verify with `sha256sum -c SHA256SUMS`. Google Drive and remote-server
+sources do not work on Linux yet — local folders are fully supported.
+
+Windows and macOS users should use [upstream Ckourse
+releases](https://github.com/redaantar/ckourse/releases) instead.
 
 ---
 
