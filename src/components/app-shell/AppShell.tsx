@@ -9,6 +9,7 @@ import {
 import { cn } from "@/lib/utils";
 import { reportError } from "@/lib/posthog";
 import { AnimatedThemeToggler } from "@/components/ui/animatedThemeToggle";
+import { ShortcutsDialog } from "@/components/app-shell/ShortcutsDialog";
 import logoIcon from "@/assets/icons/logo-icon.png";
 import { spring, navigationItems, appItems } from "./constants";
 import { SquircleClipDefs } from "./SquircleClipDefs";
@@ -169,6 +170,7 @@ function AppShellInner({ children }: AppShellProps) {
           <div data-tauri-drag-region className="flex-1 self-stretch" />
 
           <div className="flex items-center gap-2">
+            <ShortcutsDialog className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground [&_svg]:size-4" />
             <AnimatedThemeToggler className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground [&_svg]:size-4" />
 
             <button

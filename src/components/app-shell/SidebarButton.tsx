@@ -32,6 +32,12 @@ export function SidebarButton({
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();
     if (isActive) return;
+    // The dashboard is home — always go there directly, never to a
+    // remembered course page. Other sections restore their last path.
+    if (item.path === "/") {
+      navigate("/");
+      return;
+    }
     // Navigate to the last remembered path in this section
     const target = sectionMemory.get(item.path);
     navigate(target);

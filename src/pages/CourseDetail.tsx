@@ -410,6 +410,29 @@ function CourseDetailInner({
     }
   }, [activeLesson, allLessons, course.id, onDataChange]);
 
+  const handlePrevLesson = useCallback(async () => {
+    if (!activeLesson) return;
+    const idx = allLessons.findIndex((l) => l.id === activeLesson.id);
+    if (idx > 0) {
+      const prev = allLessons[idx - 1];
+      // Save position of current lesson before switching
+      if (videoTimeRef.current > 0) {
+        saveLessonPosition(activeLesson.id, videoTimeRef.current).catch((err) =>
+          reportError(err, "CourseDetail.handlePrevLesson", {
+            lessonId: activeLesson.id,
+            position: videoTimeRef.current,
+          }),
+        );
+      }
+      setActiveLessonId(prev.id);
+      setVideoTime(0);
+      videoTimeRef.current = 0;
+      setAutoPlay(true);
+      await setLastWatched(course.id, prev.id);
+      await onDataChange();
+    }
+  }, [activeLesson, allLessons, course.id, onDataChange]);
+
   const handleToggleComplete = useCallback(
     async (lessonId: number) => {
       try {
@@ -700,6 +723,7 @@ function CourseDetailInner({
             onPlayStateChange={handlePlayStateChange}
             onEnded={handleVideoEnded}
             onNext={handleNextLesson}
+            onPrev={handlePrevLesson}
           />
 
           {activeLesson && (

@@ -22,7 +22,6 @@ import {
   ArrowCounterClockwiseIcon as CounterClockwise,
   SubtitlesIcon as Subtitles,
   GaugeIcon as Gauge,
-  PictureInPictureIcon as PictureInPicture,
   CaretRightIcon as CaretRight,
   GearSixIcon as GearSix,
   GoogleDriveLogoIcon as GoogleDriveLogo,
@@ -52,6 +51,7 @@ interface VideoPlayerProps {
   onPlayStateChange?: (playing: boolean) => void;
   onEnded?: () => void;
   onNext?: () => void;
+  onPrev?: () => void;
 }
 
 const SPEED_OPTIONS = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
@@ -223,6 +223,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
   onPlayStateChange,
   onEnded,
   onNext,
+  onPrev,
 }, ref) {
   const navigate = useNavigate();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -572,6 +573,9 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
       const tag = (e.target as HTMLElement).tagName;
       if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
       if ((e.target as HTMLElement).isContentEditable) return;
+      // Single-key shortcuts must not fire with modifiers held (e.g. Ctrl+F
+      // is app search — it must not also toggle fullscreen).
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
 
       const v = videoRef.current;
       switch (e.key) {
@@ -644,7 +648,13 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
           break;
         case "p":
           e.preventDefault();
-          togglePiP();
+          onPrev?.();
+          resetHideTimer();
+          break;
+        case "n":
+          e.preventDefault();
+          onNext?.();
+          resetHideTimer();
           break;
         case ",":
           if (e.shiftKey) {
@@ -666,7 +676,9 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [playbackSpeed, hasEnded, skipSeconds, resetHideTimer]);
+    // onNext/onPrev must stay fresh: they close over the active lesson and
+    // go stale otherwise (saving the live position under a dead lesson id).
+  }, [playbackSpeed, hasEnded, skipSeconds, resetHideTimer, onNext, onPrev]);
 
   const togglePlay = useCallback(() => {
     if (!videoRef.current) return;
@@ -767,22 +779,6 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
     };
     document.addEventListener("fullscreenchange", handleChange);
     return () => document.removeEventListener("fullscreenchange", handleChange);
-  }, []);
-
-  const togglePiP = useCallback(() => {
-    if (!videoRef.current) return;
-    if (document.pictureInPictureElement) {
-      safeDomPromise(
-        document.exitPictureInPicture(),
-        "VideoPlayer.exitPiP",
-      );
-    } else {
-      safeDomPromise(
-        videoRef.current.requestPictureInPicture(),
-        "VideoPlayer.requestPiP",
-        { videoSrc: videoRef.current.currentSrc },
-      );
-    }
   }, []);
 
   const skipForward = useCallback(() => {
@@ -1647,10 +1643,6 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
               )}
             </div>
           )}
-
-          <ControlButton onClick={togglePiP} tooltip="Picture-in-Picture (P)">
-            <PictureInPicture className="size-4" />
-          </ControlButton>
 
           <ControlButton onClick={toggleFullscreen} tooltip={isFullscreen ? "Exit fullscreen (Esc)" : "Fullscreen (F)"}>
             {isFullscreen ? (

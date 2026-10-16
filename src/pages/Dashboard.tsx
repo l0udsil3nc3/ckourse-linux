@@ -1,6 +1,7 @@
-import { useState, useMemo, useRef, useEffect, useCallback } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import { usePageVisible } from "@/hooks/usePageVisible";
+import { useState, useMemo, useRef, useEffect, useCallback, useContext } from "react";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { usePageVisible, ActivePathContext } from "@/hooks/usePageVisible";
+import { useSettings } from "@/hooks/useSettings";
 import {
   MagnifyingGlassIcon as MagnifyingGlass,
   PlusIcon as Plus,
@@ -10,14 +11,14 @@ import {
   BookmarkSimpleIcon as BookmarkSimple,
 } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
-import { CourseCard } from "@/components/dashboard/CourseCard";
-import { DashboardStatsBar } from "@/components/dashboard/DashboardStats";
+import { CourseCard } from "@/components/dashboard/CourseCard";import { DashboardStatsBar } from "@/components/dashboard/DashboardStats";
 import { EmptyLibrary } from "@/components/dashboard/EmptyLibrary";
 import { SquircleSearch } from "@/components/ui/SquircleSearch";
 import { SquircleButton } from "@/components/ui/SquircleButton";
 import { ThemedSelect } from "@/components/ui/ThemedSelect";
 import type { Course, DashboardStats, CourseCategory, CourseStatus } from "@/types";
-import { getCourses, getDashboardStats } from "@/lib/store";
+import { getCourses, getDashboardStats, getResumeTarget } from "@/lib/store";
+import { toast } from "sonner";
 import { EASE, EASE_OUT } from "@/lib/constants";
 
 type SortOption = "recent" | "progress" | "title";
@@ -62,6 +63,12 @@ export function Dashboard({ className }: DashboardProps) {
   const [loadError, setLoadError] = useState(false);
   const filterRef = useRef<HTMLDivElement>(null);
   const [filterHeight, setFilterHeight] = useState(0);
+  const [selectedIndex, setSelectedIndex] = useState(-1);
+  const cardRefs = useRef(new Map<number, HTMLDivElement>());
+  const activePath = useContext(ActivePathContext);
+  const isVisible = activePath === "/";
+  const location = useLocation();
+  const { settings } = useSettings();
 
   // Derive filter state from URL search params
   const search = searchParams.get("q") ?? "";
@@ -182,6 +189,85 @@ export function Dashboard({ className }: DashboardProps) {
     return ["all" as const, ...Array.from(cats)] as (CourseCategory | "all")[];
   }, [courses]);
 
+  const setCardRef = useCallback(
+    (index: number) => (el: HTMLDivElement | null) => {
+      if (el) {
+        cardRefs.current.set(index, el);
+      } else {
+        cardRefs.current.delete(index);
+      }
+    },
+    [],
+  );
+
+  // Reset keyboard selection whenever the visible list changes shape.
+  useEffect(() => {
+    setSelectedIndex(-1);
+  }, [search, category, status, sort, bookmarkFilter]);
+
+  // Arrow keys move a selection across the visible courses; Enter opens it.
+  // Gated on visibility: keep-alive leaves this page mounted in the
+  // background, and its keys must stay dead while hidden.
+  useEffect(() => {
+    if (!isVisible) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      const t = e.target as HTMLElement;
+      if (
+        t instanceof HTMLInputElement ||
+        t instanceof HTMLTextAreaElement ||
+        t instanceof HTMLSelectElement ||
+        t.isContentEditable
+      ) {
+        return;
+      }
+      if (e.key === " ") {
+        // Focused buttons/links handle space natively — don't steal it.
+        if (t instanceof HTMLButtonElement || t instanceof HTMLAnchorElement) return;
+        e.preventDefault();
+        getResumeTarget()
+          .then((target) => {
+            if (target) {
+              navigate(
+                `/course/${target.courseId}?lesson=${target.lessonId}&from=${encodeURIComponent(location.pathname + location.search)}`,
+              );
+            } else {
+              toast.info("Nothing to resume yet — play any lesson first.");
+            }
+          })
+          .catch(() => {});
+        return;
+      }
+      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        e.preventDefault();
+        setSelectedIndex((i) => {
+          const len = filteredCourses.length;
+          if (len === 0) return -1;
+          if (e.key === "ArrowDown") return i >= len - 1 ? len - 1 : i + 1;
+          if (i === -1) return len - 1;
+          return i <= 0 ? 0 : i - 1;
+        });
+      } else if (e.key === "Enter" && selectedIndex >= 0) {
+        const course = filteredCourses[selectedIndex];
+        if (course) {
+          e.preventDefault();
+          navigate(
+            `/course/${course.id}?from=${encodeURIComponent(location.pathname + location.search)}`,
+          );
+        }
+      }
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [isVisible, filteredCourses, selectedIndex, navigate, location]);
+
+  // Keep the keyboard-selected card in view.
+  useEffect(() => {
+    if (selectedIndex >= 0) {
+      cardRefs.current.get(selectedIndex)?.scrollIntoView({ block: "nearest" });
+    }
+  }, [selectedIndex]);
+
   const handleImport = () => {
     navigate("/import");
   };
@@ -218,7 +304,7 @@ export function Dashboard({ className }: DashboardProps) {
 
   return (
     <div className={cn("mx-auto max-w-6xl", className)}>
-      {stats && <DashboardStatsBar stats={stats} className="mb-6" />}
+      {stats && settings.show_stats && <DashboardStatsBar stats={stats} className="mb-6" />}
 
       <div className="mb-6 flex items-center gap-3">
         <SquircleSearch
@@ -341,11 +427,12 @@ export function Dashboard({ className }: DashboardProps) {
           {filteredCourses.map((course, index) => (
             <div
               key={course.id}
+              ref={setCardRef(index)}
               style={{
                 animation: `card-in 350ms ${EASE_OUT} ${index * 50}ms both`,
               }}
             >
-              <CourseCard course={course} onBookmarkChange={loadCourses} />
+              <CourseCard course={course} onBookmarkChange={loadCourses} selected={selectedIndex === index} />
             </div>
           ))}
         </div>

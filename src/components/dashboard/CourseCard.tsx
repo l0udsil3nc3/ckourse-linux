@@ -45,7 +45,7 @@ function formatLastWatched(dateStr: string | null): string {
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
-export function CourseCard({ course, onBookmarkChange }: { course: Course; onBookmarkChange?: () => void }) {
+export function CourseCard({ course, onBookmarkChange, selected }: { course: Course; onBookmarkChange?: () => void; selected?: boolean }) {
   const location = useLocation();
   const percentage = Math.round(
     (course.completedLessons / course.totalLessons) * 100
@@ -57,7 +57,7 @@ export function CourseCard({ course, onBookmarkChange }: { course: Course; onBoo
     <Link to={`/course/${course.id}?from=${encodeURIComponent(location.pathname + location.search)}`} className="block h-full">
       <div className="squircle-subtle-wrapper group relative flex h-full flex-col transition-colors">
         <div className="squircle-subtle absolute inset-0 bg-border" />
-        <div className="squircle-subtle absolute inset-px bg-card transition-colors group-hover:bg-secondary" />
+        <div className={cn("squircle-subtle absolute inset-px transition-colors group-hover:bg-secondary", selected ? "bg-secondary" : "bg-card")} />
 
         <div className="squircle-subtle absolute inset-0 overflow-hidden">
           <div
@@ -135,12 +135,12 @@ export function CourseCard({ course, onBookmarkChange }: { course: Course; onBoo
             <div className="mt-auto pt-3">
               <div className="relative mb-3 h-px">
                 <div className="absolute inset-0 bg-linear-to-r from-transparent via-primary/20 to-transparent" />
-                <div className="absolute inset-0 bg-linear-to-r from-transparent via-primary/50 to-transparent opacity-0 transition-opacity duration-150 group-hover:opacity-100" style={{ transitionTimingFunction: "cubic-bezier(0.2, 0, 0, 1)" }} />
+                <div className={cn("absolute inset-0 bg-linear-to-r from-transparent via-primary/50 to-transparent transition-opacity duration-150 group-hover:opacity-100", selected ? "opacity-100" : "opacity-0")} style={{ transitionTimingFunction: "cubic-bezier(0.2, 0, 0, 1)" }} />
               </div>
               <div className="flex items-center justify-center gap-1.5 font-sans text-xs font-semibold text-primary">
                 {course.status === "not-started" ? "Start Course" : course.status === "completed" ? "Review Course" : "Continue"}
                 <ArrowRight
-                  className="size-3.5 transition-transform duration-150 group-hover:translate-x-1"
+                  className={cn("size-3.5 transition-transform duration-150 group-hover:translate-x-1", selected && "translate-x-1")}
                   style={{ transitionTimingFunction: "cubic-bezier(0.2, 0, 0, 1)" }}
                 />
               </div>

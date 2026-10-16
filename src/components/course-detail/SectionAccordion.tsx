@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   PlayIcon as Play,
   CheckCircleIcon as CheckCircle,
@@ -30,9 +30,18 @@ export function SectionAccordion({
     completedCount === section.lessons.length && section.lessons.length > 0;
   const hasActiveLesson = section.lessons.some((l) => l.id === activeLessonId);
   const [open, setOpen] = useState(hasActiveLesson);
+  const headerRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     setOpen(hasActiveLesson);
+  }, [hasActiveLesson]);
+
+  // Bring the active lesson's folder into view (e.g. after landing on a
+  // deep lesson from search) instead of leaving the list parked at the top.
+  useEffect(() => {
+    if (hasActiveLesson) {
+      headerRef.current?.scrollIntoView({ block: "nearest" });
+    }
   }, [hasActiveLesson]);
   const sectionDuration = section.lessons.reduce(
     (sum, l) => sum + l.duration,
@@ -42,6 +51,7 @@ export function SectionAccordion({
   return (
     <div className="border-b border-border last:border-b-0">
       <button
+        ref={headerRef}
         onClick={() => setOpen((v) => !v)}
         className="flex w-full items-start gap-3 px-4 py-2.5 text-left transition-colors hover:bg-secondary"
       >
