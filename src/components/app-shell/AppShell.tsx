@@ -8,10 +8,8 @@ import {
 } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { reportError } from "@/lib/posthog";
-import { useTheme } from "@/hooks/useTheme";
 import { AnimatedThemeToggler } from "@/components/ui/animatedThemeToggle";
-import logoDark from "@/assets/icons/logo-dark.svg";
-import logoLight from "@/assets/icons/logo-light.svg";
+import logoIcon from "@/assets/icons/logo-icon.png";
 import { spring, navigationItems, appItems } from "./constants";
 import { SquircleClipDefs } from "./SquircleClipDefs";
 import { useBreadcrumbs } from "./useBreadcrumbs";
@@ -32,9 +30,8 @@ export function AppShell({ children }: AppShellProps) {
 }
 
 function AppShellInner({ children }: AppShellProps) {
-  const { theme } = useTheme();
   const breadcrumbs = useBreadcrumbs();
-  const logo = theme === "light" ? logoLight : logoDark;
+  const logo = logoIcon;
   const [collapsed, setCollapsed] = useState(false);
   const [isSmallScreen, setIsSmallScreen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -108,7 +105,7 @@ function AppShellInner({ children }: AppShellProps) {
                 <img src={logo} alt="Ckourse Linux logo" className="h-7 shrink-0" />
                 <div className="flex shrink-0 items-baseline gap-1.5">
                   <span className="font-heading text-base font-bold tracking-wider text-sidebar-foreground">
-                    <span className="text-sidebar-primary">CK</span>OURSE
+                    <span className="text-sidebar-primary">c</span>kourse
                   </span>
                   <span className="rounded-sm bg-sidebar-primary/15 px-1 py-0.5 font-mono text-[8px] font-semibold leading-none tracking-[0.16em] text-sidebar-primary">
                     LINUX
