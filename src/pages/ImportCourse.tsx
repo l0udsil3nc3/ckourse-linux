@@ -66,11 +66,7 @@ interface StructureIds {
 }
 
 const builtinCategories: { value: CourseCategory; label: string }[] = [
-  { value: "frontend", label: "Frontend" },
-  { value: "backend", label: "Backend" },
-  { value: "devops", label: "DevOps" },
-  { value: "database", label: "Database" },
-  { value: "design", label: "Design" },
+  { value: "medicine", label: "Medicine" },
   { value: "other", label: "Other" },
 ];
 

@@ -43,11 +43,7 @@ const CHART_COLORS = [
 ];
 
 const CATEGORY_LABELS: Record<string, string> = {
-  frontend: "Frontend",
-  backend: "Backend",
-  devops: "DevOps",
-  database: "Database",
-  design: "Design",
+  medicine: "Medicine",
   other: "Other",
 };
 

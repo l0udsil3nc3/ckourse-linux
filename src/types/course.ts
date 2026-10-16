@@ -1,5 +1,5 @@
 export type CourseStatus = "in-progress" | "completed" | "not-started";
-export type CourseCategory = "frontend" | "backend" | "devops" | "database" | "design" | "other";
+export type CourseCategory = "medicine" | "other";
 
 export interface Course {
   id: number;
