@@ -101,7 +101,7 @@ pub struct NoteWithCourse {
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct SearchResult {
-    pub kind: String, // "course" | "lesson"
+    pub kind: String, // "course" | "lesson" | "section"
     pub course_id: i64,
     pub course_title: String,
     pub accent_color: String,
@@ -1884,8 +1884,42 @@ pub fn search_content(conn: &Connection, query: &str) -> SqlResult<Vec<SearchRes
             accent_color: row.get(4)?,
         })
     })?;
-    for r in lesson_rows {
+    // NOTE: lessons are collected here but appended to `results` after the
+    // sections below, so the array order matches the UI's group order
+    // (courses, folders, lessons) and keyboard indexes line up visually.
+    let lesson_results: SqlResult<Vec<SearchResult>> = lesson_rows.collect();
+
+    // Search sections (folders): open the section's first lecture on select,
+    // so only sections that actually contain lessons are returned.
+    let mut stmt = conn.prepare(
+        "SELECT s.course_id, c.title, c.accent_color, s.title,
+                (SELECT l.id FROM lessons l
+                 WHERE l.section_id = s.id ORDER BY l.sort_order LIMIT 1)
+         FROM sections s
+         JOIN courses c ON s.course_id = c.id
+         WHERE LOWER(s.title) LIKE ?1
+           AND EXISTS (SELECT 1 FROM lessons l WHERE l.section_id = s.id)
+         ORDER BY c.updated_at DESC
+         LIMIT 5",
+    )?;
+    let section_rows = stmt.query_map(params![pattern], |row| {
+        Ok(SearchResult {
+            kind: "section".to_string(),
+            course_id: row.get(0)?,
+            course_title: row.get(1)?,
+            accent_color: row.get(2)?,
+            lesson_title: row.get(3)?,
+            lesson_id: row.get(4)?,
+        })
+    })?;
+    for r in section_rows {
         results.push(r?);
+    }
+
+    // Lessons go last so the array order matches the UI's group order
+    // (courses, folders, lessons) — keyboard indexes then line up visually.
+    for r in lesson_results? {
+        results.push(r);
     }
 
     Ok(results)

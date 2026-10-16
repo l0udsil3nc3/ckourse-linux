@@ -86,7 +86,7 @@ export interface NoteWithCourse {
 }
 
 export interface SearchResult {
-  kind: "course" | "lesson";
+  kind: "course" | "lesson" | "section";
   courseId: number;
   courseTitle: string;
   accentColor: string;
