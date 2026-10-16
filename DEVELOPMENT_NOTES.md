@@ -102,6 +102,12 @@ The main implementation is in `src-tauri/src/db.rs`,
 
 ## Known issues and unverified areas
 
+- **Dashboard sidebar button can land on the previous page instead of home
+  (deferred to a 2.0.x point update).** Verified against the 2.0.0 AppImage:
+  after search-driven navigation, clicking Dashboard restores a remembered
+  course page via `sectionMemory` instead of going to `/`, despite the
+  `SidebarButton` home short-circuit. Back-button behavior is correct and
+  unaffected.
 - **Seeking flashes once per seek (mitigated, at the platform floor).** Every
   `currentTime` write is a flushing seek: the GStreamer sink drops its buffers
   and paints nothing until the first frame after the new position decodes.
