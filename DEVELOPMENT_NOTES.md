@@ -117,9 +117,11 @@ The main implementation is in `src-tauri/src/db.rs`,
   linear seek-timing correlation in a replicated playbin pipeline, identical
   with hardware and software decoders. The seek bar therefore commits once on
   mouseup instead of scrubbing live, so a drag produces one flash instead of a
-  strobe, and a dim-veil pulse (raised with each seek, pre-dimming during
-  drags) makes the remaining flash read as intentional buffering rather than a
-  glitch. A freeze-frame cover was attempted and abandoned: both `drawImage`
+  strobe. An optional dim-veil pulse (Settings → Playback → "Dim on seek",
+  off by default) can still be enabled to make the remaining flash read as
+  intentional buffering rather than a glitch; with it off the raw flash is
+  infrequent enough to have been accepted in daily use. A freeze-frame cover
+  was attempted and abandoned: both `drawImage`
   and `createImageBitmap` silently read back nothing on this pipeline, so there
   is no frame to cover the gap with. Shortening the flash further would require
   shorter GOPs in the content (re-encode) or a sink that holds its last frame

@@ -44,6 +44,8 @@ const GROUPS: ShortcutGroup[] = [
       { keys: ["←", "→"], action: "Seek" },
       { keys: ["↑", "↓"], action: "Volume" },
       { keys: ["N", "P"], action: "Next / previous lesson" },
+      { keys: ["Shift", ","], action: "Slower playback" },
+      { keys: ["Shift", "."], action: "Faster playback" },
       { keys: ["F"], action: "Fullscreen" },
       { keys: ["M"], action: "Mute" },
       { keys: ["C"], action: "Subtitles" },

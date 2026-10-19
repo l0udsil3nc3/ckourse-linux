@@ -658,20 +658,22 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
           onNext?.();
           resetHideTimer();
           break;
-        case ",":
-          if (e.shiftKey) {
-            e.preventDefault();
+        case "<": // Shift+, — slower
+          e.preventDefault();
+          {
             const idx = SPEED_OPTIONS.indexOf(playbackSpeed);
             if (idx > 0) changeSpeed(SPEED_OPTIONS[idx - 1]);
           }
+          resetHideTimer();
           break;
-        case ".":
-          if (e.shiftKey) {
-            e.preventDefault();
+        case ">": // Shift+. — faster
+          e.preventDefault();
+          {
             const idx = SPEED_OPTIONS.indexOf(playbackSpeed);
             if (idx < SPEED_OPTIONS.length - 1)
               changeSpeed(SPEED_OPTIONS[idx + 1]);
           }
+          resetHideTimer();
           break;
         default:
           // 0-9 jump to 0%..90% of the video, like YouTube.
