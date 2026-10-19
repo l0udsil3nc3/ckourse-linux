@@ -295,6 +295,30 @@ function CourseDetailInner({
     videoTimeRef.current = time;
   }, []);
 
+  // Ctrl+N: start a new note — jump to the Notes tab and open the editor
+  // (the editor autofocuses on mount). Ignored while typing anywhere.
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
+      if (e.key.toLowerCase() !== "n") return;
+      const t = e.target as HTMLElement;
+      if (
+        t instanceof HTMLInputElement ||
+        t instanceof HTMLTextAreaElement ||
+        t instanceof HTMLSelectElement ||
+        t.isContentEditable
+      ) {
+        return;
+      }
+      e.preventDefault();
+      setActiveTab("notes");
+      setEditingNoteId(null);
+      setShowEditor(true);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
+
   // Save position when leaving the page
   useEffect(() => {
     return () => {

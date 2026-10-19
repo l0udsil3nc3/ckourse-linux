@@ -12,6 +12,7 @@ const DEFAULTS: AppSettings = {
   skip_backward_secs: 10,
   type_to_search: false,
   show_stats: true,
+  seek_veil: true,
 };
 
 export const AUTOPLAY_DELAY_MAX = 15;
@@ -35,6 +36,7 @@ function parse(raw: Record<string, string>): AppSettings {
     skip_backward_secs: Number(raw.skip_backward_secs) || 10,
     type_to_search: raw.type_to_search === "true",
     show_stats: raw.show_stats !== "false",
+    seek_veil: raw.seek_veil !== "false",
   };
 }
 

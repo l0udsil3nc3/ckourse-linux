@@ -27,6 +27,7 @@ import {
   GoogleDriveLogoIcon as GoogleDriveLogo,
 } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
+import { useSettings } from "@/hooks/useSettings";
 import { formatVideoTime } from "@/lib/format";
 import type { Lesson, Subtitle, VideoPlayerHandle } from "@/types";
 import { getSubtitleVtt } from "@/lib/store";
@@ -226,6 +227,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
   onPrev,
 }, ref) {
   const navigate = useNavigate();
+  const { settings } = useSettings();
   const containerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const hideTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
@@ -669,6 +671,19 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
             const idx = SPEED_OPTIONS.indexOf(playbackSpeed);
             if (idx < SPEED_OPTIONS.length - 1)
               changeSpeed(SPEED_OPTIONS[idx + 1]);
+          }
+          break;
+        default:
+          // 0-9 jump to 0%..90% of the video, like YouTube.
+          if (e.key.length === 1 && e.key >= "0" && e.key <= "9") {
+            e.preventDefault();
+            const d = v.duration;
+            if (Number.isFinite(d) && d > 0) {
+              const target = (Number(e.key) / 10) * d;
+              setVideoTime(target);
+              commitSeek(target);
+              resetHideTimer();
+            }
           }
           break;
       }
@@ -1175,7 +1190,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
         aria-hidden
         className={cn(
           "pointer-events-none absolute inset-0 bg-black/40 transition-opacity duration-150 ease-out",
-          seekVeil ? "opacity-100" : "opacity-0",
+          seekVeil && settings.seek_veil ? "opacity-100" : "opacity-0",
         )}
       />
 

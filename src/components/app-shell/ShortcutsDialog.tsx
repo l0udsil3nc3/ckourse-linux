@@ -15,6 +15,7 @@ const GROUPS: ShortcutGroup[] = [
       { keys: ["Ctrl", "F"], action: "Toggle search" },
       { keys: ["Ctrl", "Space"], action: "Toggle search" },
       { keys: ["D"], action: "Go to dashboard" },
+      { keys: ["Ctrl", "N"], action: "Start a new note" },
       { keys: ["Esc"], action: "Close dialogs" },
     ],
   },
@@ -39,6 +40,7 @@ const GROUPS: ShortcutGroup[] = [
     items: [
       { keys: ["Space", "K"], action: "Play / pause" },
       { keys: ["J", "L"], action: "Back / forward 10 seconds" },
+      { keys: ["0", "-", "9"], action: "Jump to 0%–90% of the video" },
       { keys: ["←", "→"], action: "Seek" },
       { keys: ["↑", "↓"], action: "Volume" },
       { keys: ["N", "P"], action: "Next / previous lesson" },

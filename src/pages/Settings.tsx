@@ -709,6 +709,16 @@ export function Settings({ className }: SettingsProps) {
             </div>
           </SettingRow>
           <SettingRow
+            icon={<Moon className="size-4" />}
+            label="Dim on seek"
+            description="Fade the video briefly when jumping position to soften the flash"
+          >
+            <Toggle
+              checked={settings.seek_veil}
+              onChange={(v) => update("seek_veil", String(v))}
+            />
+          </SettingRow>
+          <SettingRow
             icon={<MonitorPlay className="size-4" />}
             label="Skip forward / backward"
           >

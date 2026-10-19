@@ -8,4 +8,5 @@ export interface AppSettings {
   skip_backward_secs: number;
   type_to_search: boolean;
   show_stats: boolean;
+  seek_veil: boolean;
 }
