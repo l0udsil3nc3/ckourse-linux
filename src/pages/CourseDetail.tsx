@@ -101,6 +101,11 @@ export function CourseDetail({ className }: CourseDetailProps) {
   const isValidId = courseId != null && !isNaN(numericId) && numericId > 0;
   const lessonParam = searchParams.get("lesson");
   const fromParam = searchParams.get("from") || "/";
+  // Landing seek from a note timestamp (?t=seconds). Consumed once the
+  // active lesson settles on the requested lesson, so later n/p hops and
+  // remounts don't re-seek to a stale timestamp.
+  const timeParam = Number(searchParams.get("t"));
+  const hasTimeParam = Number.isFinite(timeParam) && timeParam >= 0;
 
   const [course, setCourse] = useState<Course | null>(null);
   const [courseData, setCourseData] = useState<CourseDetailData | null>(null);
@@ -187,6 +192,7 @@ export function CourseDetail({ className }: CourseDetailProps) {
       course={course}
       courseData={courseData}
       initialLessonId={lessonParam ? Number(lessonParam) : undefined}
+      initialSeek={hasTimeParam ? timeParam : undefined}
       backTo={fromParam}
       isVisible={isVisible}
       onDataChange={reload}
@@ -204,6 +210,7 @@ function CourseDetailInner({
   course,
   courseData,
   initialLessonId,
+  initialSeek,
   backTo,
   isVisible,
   onDataChange,
@@ -214,6 +221,7 @@ function CourseDetailInner({
   course: Course;
   courseData: CourseDetailData;
   initialLessonId?: number;
+  initialSeek?: number;
   backTo: string;
   isVisible: boolean;
   onDataChange: () => Promise<void>;
@@ -247,6 +255,13 @@ function CourseDetailInner({
     }
   }, [initialLessonId]);
 
+  // A note-timestamp landing (?t=) seeks once, on the requested lesson only.
+  // Dropped as soon as the active lesson is no longer the landing target, so
+  // a later n/p hop (or a return to this lesson) can't re-seek to a stale time.
+  const [landingSeek, setLandingSeek] = useState<number | null>(
+    initialSeek ?? null,
+  );
+
   // Landing from search/favorites/notes (?lesson=): pin the active folder
   // to the top of the curriculum. Rect math keeps the scroll inside the
   // curriculum container instead of moving the page. Later lesson moves
@@ -265,6 +280,16 @@ function CourseDetailInner({
   }, [initialLessonId]);
 
   const activeLesson = allLessons.find((l) => l.id === activeLessonId) ?? allLessons[0];
+
+  useEffect(() => {
+    if (landingSeek === null) return;
+    if (!activeLesson || !initialLessonId) {
+      setLandingSeek(null);
+      return;
+    }
+    if (activeLesson.id !== initialLessonId) setLandingSeek(null);
+  }, [landingSeek, activeLesson, initialLessonId]);
+
   const [subtitles, setSubtitles] = useState<Subtitle[]>([]);
   const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState<"resources" | "notes">("notes");
@@ -766,7 +791,15 @@ function CourseDetailInner({
             autoPlay={autoPlay}
             autoSkipEnabled={settings.autoplay_next}
             autoSkipSeconds={settings.autoplay_delay_secs}
-            initialTime={settingsLoaded ? (settings.resume_position ? activeLesson?.lastPosition : 0) : null}
+            initialTime={
+              settingsLoaded
+                ? landingSeek !== null
+                  ? landingSeek
+                  : settings.resume_position
+                    ? activeLesson?.lastPosition
+                    : 0
+                : null
+            }
             defaultSpeed={settings.default_speed}
             defaultVolume={settings.default_volume}
             skipSeconds={settings.skip_forward_secs}

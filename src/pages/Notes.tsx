@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { usePageVisible } from "@/hooks/usePageVisible";
 import {
   NotepadIcon as Notepad,
@@ -299,6 +299,7 @@ function NoteItem({
   onStartEdit: () => void;
   onDelete: () => void;
 }) {
+  const navigate = useNavigate();
   const updated = new Date(note.updatedAt);
   const formatted = updated.toLocaleDateString("en-US", {
     month: "short",
@@ -321,6 +322,17 @@ function NoteItem({
           <div
             className="note-content font-sans text-sm leading-relaxed text-foreground/90"
             dangerouslySetInnerHTML={{ __html: note.content }}
+            onClick={(e) => {
+              // Timestamp badges are inert spans inside the note HTML —
+              // jump to that lesson at that second, like the course page.
+              const target = e.target as HTMLElement;
+              if (!target.classList.contains("note-timestamp")) return;
+              const seconds = Number(target.dataset.timestamp);
+              if (isNaN(seconds)) return;
+              navigate(
+                `/course/${note.courseId}?lesson=${note.lessonId}&t=${seconds}&from=/notes`,
+              );
+            }}
           />
 
           <div className="mt-2 flex items-center gap-1.5">
