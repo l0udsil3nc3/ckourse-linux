@@ -17,6 +17,17 @@ upstream Ckourse v1.2.0, along with verification status and follow-up work.
   upstream icon artwork is retained, with a Linux badge added to the sidebar
   wordmark. The bundle identifier remains upstream-compatible.
 
+## Release history
+
+- `ckourse-linux-v2.0.0` (tag `1ee8c4a`): first release. AppImage-only
+  deliverable; assets renamed with underscores so `sha256sum -c SHA256SUMS`
+  survives GitHub's asset-name sanitization.
+- `ckourse-linux-v2.0.1`: Notes timestamp badges jump to their lesson at that
+  second; Ctrl+N note shortcut; digit (0–9) seek keys; Shift+,/. speed keys
+  fixed; optional dim-on-seek setting (off by default); Ocean and Modern
+  Minimal theme families; Classic dark muted-text contrast lift; Syne →
+  Archivo headings. The dashboard-sidebar known issue remains open.
+
 ## Changes from upstream
 
 ### Linux `stream://` playback
