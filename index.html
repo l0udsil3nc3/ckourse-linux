@@ -25,7 +25,8 @@
                   p.family === "default" ||
                   p.family === "gnome" ||
                   p.family === "classic" ||
-                  p.family === "ocean")
+                  p.family === "ocean" ||
+                  p.family === "modern")
               ) {
                 family = p.family === "default" ? "legacy" : p.family;
               }
@@ -43,7 +44,7 @@
             // Fresh install: classic is the default family.
             family = "classic";
           }
-          cl.remove("light", "dark", "gnome", "classic", "ocean");
+          cl.remove("light", "dark", "gnome", "classic", "ocean", "modern");
           if (family !== "legacy") cl.add(family);
           cl.add(mode);
         } catch (e) {

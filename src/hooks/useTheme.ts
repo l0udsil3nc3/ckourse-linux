@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback } from "react";
 
-type ThemeFamily = "legacy" | "gnome" | "classic" | "ocean";
+type ThemeFamily = "legacy" | "gnome" | "classic" | "ocean" | "modern";
 type ThemeMode = "light" | "dark";
 
 function getFamily(): ThemeFamily {
   if (document.documentElement.classList.contains("gnome")) return "gnome";
   if (document.documentElement.classList.contains("classic")) return "classic";
   if (document.documentElement.classList.contains("ocean")) return "ocean";
+  if (document.documentElement.classList.contains("modern")) return "modern";
   return "legacy";
 }
 
@@ -16,7 +17,7 @@ function getMode(): ThemeMode {
 
 function applyTheme(family: ThemeFamily, mode: ThemeMode) {
   // Remove all theme-related classes
-  document.documentElement.classList.remove("light", "dark", "gnome", "classic", "ocean");
+  document.documentElement.classList.remove("light", "dark", "gnome", "classic", "ocean", "modern");
   
   // Apply family
   if (family === "gnome") {
@@ -25,6 +26,8 @@ function applyTheme(family: ThemeFamily, mode: ThemeMode) {
     document.documentElement.classList.add("classic");
   } else if (family === "ocean") {
     document.documentElement.classList.add("ocean");
+  } else if (family === "modern") {
+    document.documentElement.classList.add("modern");
   }
   
   // Apply mode
@@ -46,7 +49,8 @@ function readStoredPreference(): { family: ThemeFamily; mode: ThemeMode } | null
         parsed.family === "default" ||
         parsed.family === "gnome" ||
         parsed.family === "classic" ||
-        parsed.family === "ocean") &&
+        parsed.family === "ocean" ||
+        parsed.family === "modern") &&
       (parsed.mode === "light" || parsed.mode === "dark")
     ) {
       return {

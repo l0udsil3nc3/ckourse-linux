@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@100..900&family=DM+Sans:wght@400;600&family=JetBrains+Mono:wght@500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@100..900&family=DM+Sans:wght@400;600&family=Inter:wght@100..900&family=JetBrains+Mono:wght@500&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap');
 
 @import "tailwindcss";
@@ -15,6 +15,7 @@
 @custom-variant gnome (&:is(.gnome *));
 @custom-variant classic (&:is(.classic *));
 @custom-variant ocean (&:is(.ocean *));
+@custom-variant modern (&:is(.modern *));
 
 @theme inline {
     --font-sans: 'DM Sans', sans-serif;
@@ -506,6 +507,132 @@
 
 .ocean header,
 .ocean main {
+    background-image: none !important;
+}
+
+/* Modern Minimal theme — Tailwind blue-500 on neutral grays, sharp corners.
+   From the tweakcn "modern-minimal" preset. Dark secondary is nudged off the
+   card color (#2d2d2d vs the preset's #262626) so hover:bg-secondary rows
+   stay visible on cards. */
+.modern {
+    --radius: 0.375rem;
+    /* Backgrounds */
+    --background: #ffffff;
+    --foreground: #333333;
+    --card: #ffffff;
+    --card-foreground: #333333;
+    --popover: #ffffff;
+    --popover-foreground: #333333;
+    /* Primary — blue-500 */
+    --primary: #3b82f6;
+    --primary-foreground: #ffffff;
+    /* Secondary */
+    --secondary: #f3f4f6;
+    --secondary-foreground: #4b5563;
+    /* Muted */
+    --muted: #f9fafb;
+    --muted-foreground: #6b7280;
+    /* Accent — pale sky */
+    --accent: #e0f2fe;
+    --accent-foreground: #1e3a8a;
+    /* Status */
+    --destructive: #ef4444;
+    --destructive-foreground: #ffffff;
+    --info: #2563eb;
+    --success: #16a34a;
+    /* Border / Input / Ring */
+    --border: #e5e7eb;
+    --input: #e5e7eb;
+    --ring: #3b82f6;
+    /* Charts */
+    --chart-1: #3b82f6;
+    --chart-2: #2563eb;
+    --chart-3: #1d4ed8;
+    --chart-4: #1e40af;
+    --chart-5: #1e3a8a;
+    /* Sidebar */
+    --sidebar: #f9fafb;
+    --sidebar-foreground: #333333;
+    --sidebar-primary: #3b82f6;
+    --sidebar-primary-foreground: #ffffff;
+    --sidebar-accent: #e0f2fe;
+    --sidebar-accent-foreground: #1e3a8a;
+    --sidebar-border: #e5e7eb;
+    --sidebar-ring: #3b82f6;
+    --gradient-spot: transparent;
+    /* Fonts */
+    --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+    --font-heading: 'Inter', ui-sans-serif, system-ui, sans-serif;
+}
+
+.dark.modern {
+    --radius: 0.375rem;
+    /* Backgrounds */
+    --background: #171717;
+    --foreground: #e5e5e5;
+    --card: #262626;
+    --card-foreground: #e5e5e5;
+    --popover: #262626;
+    --popover-foreground: #e5e5e5;
+    /* Primary — blue-500 */
+    --primary: #3b82f6;
+    --primary-foreground: #ffffff;
+    /* Secondary (off-card so hover rows read) */
+    --secondary: #2d2d2d;
+    --secondary-foreground: #e5e5e5;
+    /* Muted */
+    --muted: #1f1f1f;
+    --muted-foreground: #a3a3a3;
+    /* Accent — deep blue */
+    --accent: #1e3a8a;
+    --accent-foreground: #bfdbfe;
+    /* Status */
+    --destructive: #ef4444;
+    --destructive-foreground: #ffffff;
+    --info: #60a5fa;
+    --success: #4ade80;
+    /* Border / Input / Ring */
+    --border: #404040;
+    --input: #404040;
+    --ring: #3b82f6;
+    /* Charts */
+    --chart-1: #60a5fa;
+    --chart-2: #3b82f6;
+    --chart-3: #2563eb;
+    --chart-4: #1d4ed8;
+    --chart-5: #1e40af;
+    /* Sidebar */
+    --sidebar: #171717;
+    --sidebar-foreground: #e5e5e5;
+    --sidebar-primary: #3b82f6;
+    --sidebar-primary-foreground: #ffffff;
+    --sidebar-accent: #1e3a8a;
+    --sidebar-accent-foreground: #bfdbfe;
+    --sidebar-border: #404040;
+    --sidebar-ring: #3b82f6;
+    --gradient-spot: transparent;
+    /* Fonts */
+    --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+    --font-heading: 'Inter', ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Modern theme: no gradient backdrop, like Classic, GNOME and Ocean */
+.modern .bg-linear-to-t,
+.modern .bg-linear-to-r,
+.modern .bg-linear-to-b,
+.modern .bg-linear-to-br,
+.modern .bg-gradient-to-t,
+.modern .bg-gradient-to-r,
+.modern .bg-gradient-to-b,
+.modern .bg-gradient-to-br,
+.modern [style*="linear-gradient"],
+.modern [style*="radial-gradient"],
+.modern [style*="gradient-spot"] {
+    background-image: none !important;
+}
+
+.modern header,
+.modern main {
     background-image: none !important;
 }
 

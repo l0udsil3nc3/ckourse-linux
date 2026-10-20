@@ -217,6 +217,7 @@ const FAMILY_OPTIONS: SelectOption[] = [
   { value: "classic", label: "Classic" },
   { value: "gnome", label: "GNOME" },
   { value: "ocean", label: "Ocean" },
+  { value: "modern", label: "Modern" },
   { value: "legacy", label: "Legacy" },
 ];
 
@@ -237,12 +238,13 @@ function AppearanceSection({ index }: { index: number }) {
           family === "gnome" ? "Adwaita-inspired blue theme" :
           family === "classic" ? "Default layout with Nautilus blue, no gradients" :
           family === "ocean" ? "Cool teal and cyan with Space Grotesk" :
+          family === "modern" ? "Tailwind blue on neutral gray, sharp corners" :
           "Original electric lime theme"
         }
       >
         <ThemedSelect
           value={family}
-          onChange={(v) => setFamily(v as "legacy" | "classic" | "gnome" | "ocean")}
+          onChange={(v) => setFamily(v as "legacy" | "classic" | "gnome" | "ocean" | "modern")}
           options={FAMILY_OPTIONS}
         />
       </SettingRow>
