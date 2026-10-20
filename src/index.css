@@ -1,4 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@700&family=DM+Sans:wght@400;600&family=JetBrains+Mono:wght@500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@100..900&family=DM+Sans:wght@400;600&family=JetBrains+Mono:wght@500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap');
 
 @import "tailwindcss";
 @import "tw-animate-css";
@@ -13,10 +14,11 @@
 @custom-variant dark (&:is(.dark *));
 @custom-variant gnome (&:is(.gnome *));
 @custom-variant classic (&:is(.classic *));
+@custom-variant ocean (&:is(.ocean *));
 
 @theme inline {
     --font-sans: 'DM Sans', sans-serif;
-    --font-heading: 'Syne', sans-serif;
+    --font-heading: 'Archivo', sans-serif;
     --font-mono: 'JetBrains Mono', monospace;
     --radius-sm: calc(var(--radius) - 4px);
     --radius-md: calc(var(--radius) - 2px);
@@ -161,7 +163,7 @@
     --secondary-foreground: #EDEDED;
     /* Muted */
     --muted: #111214;
-    --muted-foreground: #7A7D85;
+    --muted-foreground: #8F939B;
     /* Accent */
     --accent: #3584E4;
     --accent-foreground: #FFFFFF;
@@ -331,7 +333,7 @@
 /* Classic theme uses default font stack */
 .classic {
     --font-sans: 'DM Sans', sans-serif;
-    --font-heading: 'Syne', sans-serif;
+    --font-heading: 'Archivo', sans-serif;
 }
 
 /* Remove gradient backdrop in Classic theme (only the radial gradient spot, not controls overlay) */
@@ -379,6 +381,131 @@
 /* Ensure header and main backgrounds are solid in GNOME */
 .gnome header,
 .gnome main {
+    background-image: none !important;
+}
+
+/* Ocean theme — teal/cyan accent, cool-tinted neutrals */
+.ocean {
+    --radius: 0.75rem;
+    /* Backgrounds — light base */
+    --background: hsl(195 55% 96%);
+    --foreground: hsl(215 60% 12%);
+    --card: hsl(0 0% 100%);
+    --card-foreground: hsl(215 60% 12%);
+    --popover: hsl(0 0% 100%);
+    --popover-foreground: hsl(215 60% 12%);
+    /* Primary — deep ocean blue */
+    --primary: hsl(200 85% 32%);
+    --primary-foreground: hsl(195 55% 97%);
+    /* Secondary */
+    --secondary: hsl(190 45% 90%);
+    --secondary-foreground: hsl(210 60% 18%);
+    /* Muted */
+    --muted: hsl(195 40% 91%);
+    --muted-foreground: hsl(210 25% 40%);
+    /* Accent — teal */
+    --accent: hsl(172 65% 38%);
+    --accent-foreground: hsl(195 55% 97%);
+    /* Status */
+    --destructive: hsl(355 75% 50%);
+    --destructive-foreground: hsl(0 0% 98%);
+    --info: hsl(220 60% 50%);
+    --success: hsl(172 65% 38%);
+    /* Border / Input / Ring */
+    --border: hsl(198 35% 84%);
+    --input: hsl(198 35% 78%);
+    --ring: hsl(200 85% 32%);
+    /* Charts */
+    --chart-1: hsl(200 85% 38%);
+    --chart-2: hsl(172 65% 40%);
+    --chart-3: hsl(220 60% 50%);
+    --chart-4: hsl(185 70% 45%);
+    --chart-5: hsl(240 45% 55%);
+    /* Sidebar */
+    --sidebar: hsl(0 0% 100%);
+    --sidebar-foreground: hsl(215 60% 12%);
+    --sidebar-primary: hsl(200 85% 32%);
+    --sidebar-primary-foreground: hsl(195 55% 97%);
+    --sidebar-accent: hsl(190 45% 90%);
+    --sidebar-accent-foreground: hsl(210 60% 18%);
+    --sidebar-border: hsl(198 35% 84%);
+    --sidebar-ring: hsl(200 85% 32%);
+    --gradient-spot: transparent;
+    /* Fonts */
+    --font-sans: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+    --font-heading: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+.dark.ocean {
+    --radius: 0.75rem;
+    /* Backgrounds — deep-sea dark */
+    --background: hsl(215 60% 8%);
+    --foreground: hsl(190 50% 92%);
+    --card: hsl(213 50% 12%);
+    --card-foreground: hsl(190 50% 92%);
+    --popover: hsl(213 50% 12%);
+    --popover-foreground: hsl(190 50% 92%);
+    /* Primary — bright cyan */
+    --primary: hsl(192 90% 55%);
+    --primary-foreground: hsl(215 60% 8%);
+    /* Secondary */
+    --secondary: hsl(212 40% 18%);
+    --secondary-foreground: hsl(190 50% 92%);
+    /* Muted */
+    --muted: hsl(212 40% 16%);
+    --muted-foreground: hsl(200 25% 65%);
+    /* Accent — teal */
+    --accent: hsl(168 75% 48%);
+    --accent-foreground: hsl(215 60% 8%);
+    /* Status */
+    --destructive: hsl(355 80% 60%);
+    --destructive-foreground: hsl(0 0% 98%);
+    --info: hsl(220 70% 62%);
+    --success: hsl(168 75% 48%);
+    /* Border / Input / Ring */
+    --border: hsl(210 40% 20%);
+    --input: hsl(210 40% 24%);
+    --ring: hsl(192 90% 55%);
+    /* Charts */
+    --chart-1: hsl(192 90% 55%);
+    --chart-2: hsl(168 75% 48%);
+    --chart-3: hsl(220 70% 62%);
+    --chart-4: hsl(185 75% 50%);
+    --chart-5: hsl(250 60% 68%);
+    /* Sidebar */
+    --sidebar: hsl(213 50% 12%);
+    --sidebar-foreground: hsl(190 50% 92%);
+    --sidebar-primary: hsl(192 90% 55%);
+    --sidebar-primary-foreground: hsl(215 60% 8%);
+    --sidebar-accent: hsl(212 40% 18%);
+    --sidebar-accent-foreground: hsl(190 50% 92%);
+    --sidebar-border: hsl(210 40% 20%);
+    --sidebar-ring: hsl(192 90% 55%);
+    --gradient-spot: transparent;
+    /* Fonts */
+    --font-sans: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+    --font-heading: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+/* Ocean theme: no gradient backdrop, like Classic and GNOME */
+.ocean .bg-linear-to-t,
+.ocean .bg-linear-to-r,
+.ocean .bg-linear-to-b,
+.ocean .bg-linear-to-br,
+.ocean .bg-gradient-to-t,
+.ocean .bg-gradient-to-r,
+.ocean .bg-gradient-to-b,
+.ocean .bg-gradient-to-br,
+.ocean [style*="linear-gradient"],
+.ocean [style*="radial-gradient"],
+.ocean [style*="gradient-spot"] {
+    background-image: none !important;
+}
+
+.ocean header,
+.ocean main {
     background-image: none !important;
 }
 

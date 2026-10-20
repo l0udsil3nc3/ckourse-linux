@@ -24,7 +24,8 @@
                   // Migrate the pre-rename "default" value.
                   p.family === "default" ||
                   p.family === "gnome" ||
-                  p.family === "classic")
+                  p.family === "classic" ||
+                  p.family === "ocean")
               ) {
                 family = p.family === "default" ? "legacy" : p.family;
               }
@@ -42,7 +43,7 @@
             // Fresh install: classic is the default family.
             family = "classic";
           }
-          cl.remove("light", "dark", "gnome", "classic");
+          cl.remove("light", "dark", "gnome", "classic", "ocean");
           if (family !== "legacy") cl.add(family);
           cl.add(mode);
         } catch (e) {
