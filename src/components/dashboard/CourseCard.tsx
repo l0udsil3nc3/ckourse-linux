@@ -55,11 +55,11 @@ export function CourseCard({ course, onBookmarkChange, selected }: { course: Cou
 
   return (
     <Link to={`/course/${course.id}?from=${encodeURIComponent(location.pathname + location.search)}`} className="block h-full">
-      <div className="squircle-subtle-wrapper group relative flex h-full flex-col transition-colors">
-        <div className="squircle-subtle absolute inset-0 bg-border" />
-        <div className={cn("squircle-subtle absolute inset-px transition-colors group-hover:bg-secondary", selected ? "bg-secondary" : "bg-card")} />
+      <div className="group relative flex h-full flex-col transition-colors">
+        <div className="rounded-xl absolute inset-0 bg-border" />
+        <div className={cn("rounded-xl absolute inset-px transition-colors group-hover:bg-secondary", selected ? "bg-secondary" : "bg-card")} />
 
-        <div className="squircle-subtle absolute inset-0 overflow-hidden">
+        <div className="rounded-xl absolute inset-0 overflow-hidden">
           <div
             className="relative flex h-24 items-center justify-center"
             style={{ backgroundColor: `${course.accentColor}10` }}

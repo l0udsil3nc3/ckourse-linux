@@ -36,8 +36,8 @@ src/
     Sidebar.tsx            # App sidebar with navigation
     CourseCard.tsx          # Feature components
     ProgressBar.tsx         # Reusable custom components
-    SquircleSearch.tsx      # Reusable squircle search input
-    SquircleButton.tsx      # Reusable squircle button (primary/secondary/ghost)
+    SearchInput.tsx          # Reusable search input (rounded-lg, focus border, clear button)
+    ActionButton.tsx         # Reusable button (primary/secondary/ghost)
   pages/
     Dashboard.tsx          # Library / Home page
   data/
@@ -158,16 +158,16 @@ export function MyComponent({ title, className }: MyComponentProps) {
 }
 ```
 
-### Reusable squircle components
+### Reusable input & button components
 
-Two reusable components wrap the squircle layered-border pattern for use across the app:
+Two reusable components provide the app's standard search input and action button:
 
-**`SquircleSearch`** — search input with squircle shape, focus border, and clear button:
+**`SearchInput`** — bordered search input with focus border and clear button:
 
 ```tsx
-import { SquircleSearch } from "@/components/SquircleSearch";
+import { SearchInput } from "@/components/ui/SearchInput";
 
-<SquircleSearch
+<SearchInput
   value={search}
   onChange={setSearch}
   placeholder="Search courses..."
@@ -177,27 +177,27 @@ import { SquircleSearch } from "@/components/SquircleSearch";
 
 Props: `value`, `onChange`, `placeholder?`, `className?`
 
-**`SquircleButton`** — button with squircle shape and three variants:
+**`ActionButton`** — bordered button with three variants:
 
 ```tsx
-import { SquircleButton } from "@/components/SquircleButton";
+import { ActionButton } from "@/components/ui/ActionButton";
 
-// Primary CTA (lime background)
-<SquircleButton variant="primary" onClick={handleImport}>
+// Primary CTA (accent background)
+<ActionButton variant="primary" onClick={handleImport}>
   <Plus className="size-4" weight="bold" />
   Import Course
-</SquircleButton>
+</ActionButton>
 
 // Secondary with active/toggle state (bordered, switches to accent when active)
-<SquircleButton variant="secondary" active={showFilters} onClick={toggle}>
+<ActionButton variant="secondary" active={showFilters} onClick={toggle}>
   <Funnel className="size-4" />
   Filters
-</SquircleButton>
+</ActionButton>
 
 // Ghost (no border, hover background)
-<SquircleButton variant="ghost" onClick={handleClick}>
+<ActionButton variant="ghost" onClick={handleClick}>
   Label
-</SquircleButton>
+</ActionButton>
 ```
 
 Props: `variant?` (`"primary"` | `"secondary"` | `"ghost"`), `active?`, `className?`, plus all native button attributes.
@@ -251,102 +251,33 @@ import { cn } from "@/lib/utils";
 | Flex row with gap | `flex items-center gap-3` |
 | Flex column with gap | `flex flex-col gap-3` |
 
-### Border radius & Squircles
+### Border radius
 
-The base radius is `0.625rem`. Ckourse uses two shape systems:
-
-**Standard `border-radius`** — for cards, containers, and badges:
+Ckourse uses standard `border-radius` shapes only — the squircle (clip-path) system was removed. Match shapes to the element's role:
 
 ```tsx
-<div className="rounded-xl" />  // Cards, containers, page panels
-<div className="rounded-md" />  // Standard buttons, text inputs
-<div className="rounded-full" /> // Badges, avatars, progress bars
+<div className="rounded-xl" />  // Cards, panels, dialogs, banners
+<div className="rounded-lg" />  // Buttons, search inputs, nav/tooltips, icon containers
+<div className="rounded-md" />  // Small buttons, text inputs, chips
+<div className="rounded-full" /> // Badges, pills, avatars, progress bars
 ```
 
-**Squircle (iOS-style superellipse)** — for interactive surfaces that need a premium feel. Uses SVG `<clipPath>` definitions at root level and CSS utility classes.
+| Element | Class |
+|---|---|
+| Cards / panels (stat cards, course cards, section panels) | `rounded-xl` |
+| Buttons and search inputs | `rounded-lg` |
+| Nav button backgrounds, tooltips, icon containers | `rounded-lg` |
+| Badges / pills / filter chips | `rounded-full` |
+| Page containers / modals | `rounded-xl` |
 
-Two variants are available:
-
-| Variant | CSS Class | Usage |
-|---|---|---|
-| `squircle` | `.squircle` | More rounded — sidebar buttons, search bars, toolbar buttons, tooltips |
-| `squircle-subtle` | `.squircle-subtle` | Less rounded — cards and wider rectangular elements |
+Borders are plain Tailwind borders — no layered divs are needed:
 
 ```tsx
-// Apply squircle shape via CSS class
-<button className="squircle bg-sidebar-accent p-3">
-<div className="squircle-subtle bg-card">
+<div className="rounded-xl border border-border bg-card p-4">
+<button className="rounded-lg border border-border bg-card px-4 py-2.5">
 ```
 
-#### When to use squircle vs border-radius
-
-| Element | Shape | Class |
-|---|---|---|
-| Nav button backgrounds | Squircle | `squircle` |
-| Sidebar toggle button | Squircle | `squircle` |
-| Search bar | Squircle | `squircle` |
-| Toolbar buttons | Squircle | `squircle` |
-| Tooltips | Squircle | `squircle` |
-| Icon containers (collapsed states) | Squircle | `squircle` |
-| Course cards | Squircle (subtle) | `squircle-subtle` |
-| Badges / pills | Standard | `rounded-full` |
-| Page containers / panels | Standard | `rounded-xl` |
-| Inner buttons (inside cards) | Standard | `rounded-lg` or `rounded-md` |
-| Modals / dialogs (surface) | Either | `squircle` or `rounded-xl` |
-
-#### Squircle border pattern
-
-Since `clip-path` clips `box-shadow`, `outline`, and `ring`, use **layered divs** to create borders on squircled elements:
-
-```tsx
-// Squircle with border (e.g., search bar, card)
-<div className="relative">
-  <div className="squircle absolute inset-0 bg-border" />       {/* border layer */}
-  <div className="squircle absolute inset-px bg-card" />         {/* fill layer */}
-  <div className="relative px-4 py-2.5">                        {/* content */}
-    ...
-  </div>
-</div>
-
-// With focus state (use group)
-<div className="group/search relative">
-  <div className="squircle absolute inset-0 bg-border/25 transition-colors group-focus-within/search:bg-primary" />
-  <div className="squircle absolute inset-px bg-card" />
-  <div className="relative">
-    <input ... />
-  </div>
-</div>
-
-// With hover state (e.g., card)
-<div className="group relative">
-  <div className="squircle-subtle absolute inset-0 bg-border" />
-  <div className="squircle-subtle absolute inset-[1px] bg-card transition-colors group-hover:bg-secondary" />
-  ...
-</div>
-```
-
-#### Squircle setup requirement
-
-Both SVG clip-path definitions must exist in the DOM. They are currently rendered by `SquircleClipDefs` in `src/components/Sidebar.tsx`. If the sidebar is not present on a page, ensure the clip-path SVGs are rendered elsewhere (e.g., in `App.tsx`):
-
-```tsx
-<svg width="0" height="0" className="absolute">
-  <defs>
-    <clipPath id="squircle" clipPathUnits="objectBoundingBox">
-      <path d="M 0.5,0 C 0.82,0 0.95,0 0.975,0.025 C 1,0.05 1,0.18 1,0.5 C 1,0.82 1,0.95 0.975,0.975 C 0.95,1 0.82,1 0.5,1 C 0.18,1 0.05,1 0.025,0.975 C 0,0.95 0,0.82 0,0.5 C 0,0.18 0,0.05 0.025,0.025 C 0.05,0 0.18,0 0.5,0 Z" />
-    </clipPath>
-    <clipPath id="squircle-subtle" clipPathUnits="objectBoundingBox">
-      <path d="M 0.5,0 C 0.9,0 0.97,0 0.985,0.015 C 1,0.03 1,0.1 1,0.5 C 1,0.9 1,0.97 0.985,0.985 C 0.97,1 0.9,1 0.5,1 C 0.1,1 0.03,1 0.015,0.985 C 0,0.97 0,0.9 0,0.5 C 0,0.1 0,0.03 0.015,0.015 C 0.03,0 0.1,0 0.5,0 Z" />
-    </clipPath>
-  </defs>
-</svg>
-```
-
-#### Squircle limitations
-
-- `clip-path` clips overflow — no visible `box-shadow`, `outline`, or `ring` on squircled elements. Use the **layered div border pattern** instead.
-- Do not nest squircled elements (clip-path does not compound well).
-- Squircle scales to the element's bounding box — works best on roughly square or mildly rectangular elements. Use `squircle-subtle` for wider elements like cards.
+For hover/focus border changes, use `transition-colors` with `focus-within:border-primary` or `group-hover:` variants directly on the element.
 
 ---
 
@@ -458,7 +389,6 @@ import { cn } from "../../lib/utils";
 - [ ] `className` prop supported and merged
 - [ ] Correct font family (`font-sans`, `font-heading`, or `font-mono`)
 - [ ] Interactive elements have `transition-colors` and hover states
-- [ ] Correct shape: `squircle` for interactive surfaces, `squircle-subtle` for cards, `rounded-full` for badges
-- [ ] Squircle borders use layered div pattern (not `ring` or `border`)
+- [ ] Correct shape: `rounded-lg` for interactive surfaces, `rounded-xl` for cards, `rounded-full` for badges
 - [ ] Icons from `@phosphor-icons/react` with `size-4` default
 - [ ] Placed in the correct directory per the structure table

@@ -675,16 +675,6 @@
     }
 }
 
-/* Squircle (iOS-style superellipse) */
-.squircle {
-  clip-path: url(#squircle);
-}
-
-/* Subtle squircle — less rounded, for cards and wider elements */
-.squircle-subtle {
-  clip-path: url(#squircle-subtle);
-}
-
 /* Apple-style spring easing */
 .ease-apple {
   transition-timing-function: cubic-bezier(0.32, 0.72, 0, 1);

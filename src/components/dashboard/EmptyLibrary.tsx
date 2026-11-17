@@ -1,6 +1,6 @@
 import { PlusIcon as Plus } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
-import { SquircleButton } from "@/components/ui/SquircleButton";
+import { ActionButton } from "@/components/ui/ActionButton";
 import emptyAnimation from "@/assets/lotties/empty.json";
 import { EASE_OUT } from "@/lib/constants";
 import LottieLib from "lottie-react";
@@ -39,10 +39,10 @@ export function EmptyLibrary({ onImport, className }: EmptyLibraryProps) {
       </p>
 
       <div className="mt-6">
-        <SquircleButton variant="primary" onClick={onImport}>
+        <ActionButton variant="primary" onClick={onImport}>
           <Plus className="size-4" weight="bold" />
           Import Course
-        </SquircleButton>
+        </ActionButton>
       </div>
     </div>
   );

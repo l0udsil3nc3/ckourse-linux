@@ -213,7 +213,7 @@ export function SidebarSearch({ collapsed }: SidebarSearchProps) {
       <button
         onClick={openModal}
         className={cn(
-          "squircle flex w-full items-center bg-sidebar-accent/50 py-2.5 text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground",
+          "rounded-lg flex w-full items-center bg-sidebar-accent/50 py-2.5 text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground",
           collapsed ? "justify-center px-0" : "gap-3 px-3",
         )}
       >
@@ -260,13 +260,12 @@ export function SidebarSearch({ collapsed }: SidebarSearchProps) {
           onPointerDown={(e) => e.stopPropagation()}
         >
           {/* border layer */}
-          <div className="squircle-subtle absolute inset-0 bg-border/60" />
+          <div className="rounded-xl absolute inset-0 bg-border/60" />
           {/* fill layer */}
-          <div className="squircle-subtle absolute inset-px bg-card" />
+          <div className="rounded-xl absolute inset-px bg-card" />
 
-          {/* Clipped to the same squircle so row highlights can't bleed
-              past the overlay's rounded edges. */}
-          <div className="squircle-subtle relative">
+          {/* Row highlights are rounded so they stay inside the panel. */}
+          <div className="rounded-xl relative">
             {/* Search input row */}
             <div className="flex items-center gap-3 px-4 py-3.5">
               <MagnifyingGlass className="size-4 shrink-0 text-muted-foreground" />

@@ -1,5 +1,6 @@
 import {
-  SquaresFourIcon as SquaresFour,
+  HouseIcon as House,
+  BookIcon as Book,
   ChartBarIcon as ChartBar,
   BookmarkSimpleIcon as BookmarkSimple,
   NotepadIcon as Notepad,
@@ -14,9 +15,10 @@ export const spring = (extra = "") =>
   `${extra ? extra + " " : ""}${DUR} ${EASE}`.trim();
 
 export const navigationItems: NavItem[] = [
-  { icon: SquaresFour, label: "Dashboard", path: "/" },
-  { icon: BookmarkSimple, label: "Bookmarks", path: "/bookmarks" },
+  { icon: House, label: "Home", path: "/" },
+  { icon: Book, label: "Library", path: "/library" },
   { icon: ChartBar, label: "Progress", path: "/progress" },
+  { icon: BookmarkSimple, label: "Bookmarks", path: "/bookmarks" },
   { icon: Notepad, label: "Notes", path: "/notes" },
 ];
 
@@ -25,7 +27,8 @@ export const appItems: NavItem[] = [
 ];
 
 export const routeTitles: Record<string, string> = {
-  "/": "Dashboard",
+  "/": "Home",
+  "/library": "Library",
   "/bookmarks": "Bookmarks",
   "/progress": "Progress",
   "/notes": "Notes",

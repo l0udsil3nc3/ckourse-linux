@@ -220,55 +220,9 @@ Animate `width` with Apple Spring. Add a slight delay so the container renders f
 
 ---
 
-## Squircles
+## Shapes
 
-Ckourse uses iOS-style squircle (superellipse) shapes instead of standard `border-radius` for key interactive surfaces.
-
-### Setup
-
-An SVG `<clipPath>` is defined once at the root level (in `Sidebar.tsx` or a layout component):
-
-```tsx
-<svg width="0" height="0" className="absolute">
-  <defs>
-    <clipPath id="squircle" clipPathUnits="objectBoundingBox">
-      <path d="M 0.5,0 C 0.78,0 0.93,0 0.967,0.033 C 1,0.07 1,0.22 1,0.5 C 1,0.78 1,0.93 0.967,0.967 C 0.93,1 0.78,1 0.5,1 C 0.22,1 0.07,1 0.033,0.967 C 0,0.93 0,0.78 0,0.5 C 0,0.22 0,0.07 0.033,0.033 C 0.07,0 0.22,0 0.5,0 Z" />
-    </clipPath>
-  </defs>
-</svg>
-```
-
-### CSS utility in `src/index.css`
-
-```css
-.squircle {
-  clip-path: url(#squircle);
-}
-```
-
-### Where to apply squircles
-
-| Element | Use squircle? |
-|---|---|
-| Nav button backgrounds | Yes |
-| Sidebar toggle button | Yes |
-| Search bar | Yes |
-| Tooltips | Yes |
-| Icon containers (collapsed nav) | Yes |
-| Cards | No — use standard `rounded-xl` |
-| Badges | No — use standard `rounded-full` |
-| Page-level containers | No — use standard `rounded-xl` |
-| Modals / dialogs | Optional — can use for the dialog surface |
-
-### Usage
-
-```tsx
-// Apply squircle shape
-<div className="squircle bg-sidebar-accent p-3">
-
-// Combine with transitions
-<div className="squircle transition-colors duration-150 hover:bg-sidebar-accent">
-```
+Ckourse uses standard `border-radius` shapes (`rounded-lg` for interactive surfaces, `rounded-xl` for cards, `rounded-full` for badges). The squircle clip-path system was removed — shapes no longer constrain animations, so `box-shadow`, `outline`, and `ring` transitions work normally on interactive elements.
 
 ---
 
@@ -307,6 +261,6 @@ Do not apply `will-change` globally or to many elements — it reserves composit
 - [ ] Animated content stays in DOM (no conditional rendering for transitions)
 - [ ] Stagger applied when multiple items animate together
 - [ ] `will-change` set only on frequently-animated elements
-- [ ] Squircle applied to interactive surfaces (nav buttons, tooltips, icon containers)
+- [ ] Shapes use standard rounded corners (`rounded-lg` interactive, `rounded-xl` cards)
 - [ ] Hover states use `transition-colors` or Snappy curve for transforms
 - [ ] Transitions list specific properties (never `transition: all`)

@@ -19,8 +19,8 @@ export function SectionCard({ title, icon, children, index }: SectionCardProps) 
         animation: `card-in 350ms ${EASE_OUT} ${index * 60}ms both`,
       }}
     >
-      <div className="squircle-subtle absolute inset-0 bg-border/50" />
-      <div className="squircle-subtle absolute inset-px bg-card" />
+      <div className="rounded-xl absolute inset-0 bg-border/50" />
+      <div className="rounded-xl absolute inset-px bg-card" />
       <div className="relative p-5">
         <div className="mb-4 flex items-center gap-2">
           {icon}

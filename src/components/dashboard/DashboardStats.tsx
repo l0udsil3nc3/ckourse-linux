@@ -61,10 +61,10 @@ function StatCard({ icon, label, value, sub, index }: StatCardProps) {
         animation: `card-in 350ms ${EASE_OUT} ${index * 50}ms both`,
       }}
     >
-      <div className="squircle absolute inset-0 bg-card" />
+      <div className="rounded-lg absolute inset-0 bg-card" />
 
       <div className="relative flex items-center gap-3 px-4 py-3">
-        <div className="squircle flex size-9 shrink-0 items-center justify-center bg-secondary">
+        <div className="rounded-lg flex size-9 shrink-0 items-center justify-center bg-secondary">
           {icon}
         </div>
         <div className="min-w-0">
@@ -98,10 +98,10 @@ function WeekActivity({ activity, index }: WeekActivityProps) {
         animation: `card-in 350ms ${EASE_OUT} ${index * 50}ms both`,
       }}
     >
-      <div className="squircle absolute inset-0 bg-card" />
+      <div className="rounded-lg absolute inset-0 bg-card" />
 
       <div className="relative flex items-center gap-3 px-4 py-3">
-        <div className="squircle flex size-9 shrink-0 items-center justify-center bg-secondary">
+        <div className="rounded-lg flex size-9 shrink-0 items-center justify-center bg-secondary">
           <Lightning className="size-4 text-primary" weight="fill" />
         </div>
         <div className="min-w-0">
@@ -158,7 +158,7 @@ function LevelCard({ level, lessonsToNext, index }: LevelCardProps) {
         animation: `card-in 350ms ${EASE_OUT} ${index * 50}ms both`,
       }}
     >
-      <div className="squircle absolute inset-0 bg-card" />
+      <div className="rounded-lg absolute inset-0 bg-card" />
 
       <div className="relative flex items-center gap-3 px-4 py-3">
         <img

@@ -32,8 +32,8 @@ export function SidebarButton({
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();
     if (isActive) return;
-    // The dashboard is home — always go there directly, never to a
-    // remembered course page. Other sections restore their last path.
+    // Home always goes there directly, never to a remembered
+    // course page. Other sections restore their last path.
     if (item.path === "/") {
       navigate("/");
       return;
@@ -57,7 +57,7 @@ export function SidebarButton({
     >
       <div
         className={cn(
-          "absolute inset-0 squircle transition-[background] duration-200",
+          "absolute inset-0 rounded-lg transition-[background] duration-200",
           isActive
             ? "bg-primary/10"
             : "bg-transparent group-hover:bg-sidebar-accent"
@@ -81,7 +81,7 @@ export function SidebarButton({
       </span>
 
       {collapsed && (
-        <span className="squircle pointer-events-none absolute left-full z-50 ml-3 whitespace-nowrap bg-popover px-3 py-1.5 font-sans text-xs font-medium text-popover-foreground opacity-0 shadow-lg transition-all duration-200 ease-out group-hover:opacity-100 group-hover:translate-x-0 -translate-x-1">
+        <span className="rounded-lg pointer-events-none absolute left-full z-50 ml-3 whitespace-nowrap bg-popover px-3 py-1.5 font-sans text-xs font-medium text-popover-foreground opacity-0 shadow-lg transition-all duration-200 ease-out group-hover:opacity-100 group-hover:translate-x-0 -translate-x-1">
           {item.label}
         </span>
       )}

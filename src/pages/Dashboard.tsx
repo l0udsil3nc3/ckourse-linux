@@ -13,8 +13,8 @@ import {
 import { cn } from "@/lib/utils";
 import { CourseCard } from "@/components/dashboard/CourseCard";import { DashboardStatsBar } from "@/components/dashboard/DashboardStats";
 import { EmptyLibrary } from "@/components/dashboard/EmptyLibrary";
-import { SquircleSearch } from "@/components/ui/SquircleSearch";
-import { SquircleButton } from "@/components/ui/SquircleButton";
+import { SearchInput } from "@/components/ui/SearchInput";
+import { ActionButton } from "@/components/ui/ActionButton";
 import { ThemedSelect } from "@/components/ui/ThemedSelect";
 import type { Course, DashboardStats, CourseCategory, CourseStatus } from "@/types";
 import { getCourses, getDashboardStats, getResumeTarget } from "@/lib/store";
@@ -63,7 +63,7 @@ export function Dashboard({ className }: DashboardProps) {
   const cardRefs = useRef(new Map<number, HTMLDivElement>());
   const gridRef = useRef<HTMLDivElement>(null);
   const activePath = useContext(ActivePathContext);
-  const isVisible = activePath === "/";
+  const isVisible = activePath === "/library";
   const location = useLocation();
   const { settings } = useSettings();
 
@@ -126,7 +126,7 @@ export function Dashboard({ className }: DashboardProps) {
   }, [loadCourses]);
 
   // Refresh data when page becomes visible again (keep-alive)
-  usePageVisible("/", () => loadCourses(true));
+  usePageVisible("/library", () => loadCourses(true));
 
   useEffect(() => {
     if (filterRef.current) {
@@ -333,14 +333,14 @@ export function Dashboard({ className }: DashboardProps) {
       {stats && settings.show_stats && <DashboardStatsBar stats={stats} className="mb-6" />}
 
       <div className="mb-6 flex items-center gap-3">
-        <SquircleSearch
+        <SearchInput
           value={search}
           onChange={setSearch}
           placeholder="Search courses..."
           className="flex-1"
         />
 
-        <SquircleButton
+        <ActionButton
           variant="secondary"
           active={showFilters}
           onClick={() => setShowFilters((v) => !v)}
@@ -353,12 +353,12 @@ export function Dashboard({ className }: DashboardProps) {
             }}
           />
           Filters
-        </SquircleButton>
+        </ActionButton>
 
-        <SquircleButton variant="primary" onClick={() => navigate("/import")}>
+        <ActionButton variant="primary" onClick={() => navigate("/import")}>
           <Plus className="size-4" weight="bold" />
           Import Course
-        </SquircleButton>
+        </ActionButton>
       </div>
 
       <div

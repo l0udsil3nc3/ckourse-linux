@@ -13,8 +13,8 @@ import {
   SortAscendingIcon as SortAscending,
   SortDescendingIcon as SortDescending,
 } from "@phosphor-icons/react";
-import { cn } from "@/lib/utils";
-import { SquircleSearch } from "@/components/ui/SquircleSearch";
+import { cn, stripHtml } from "@/lib/utils";
+import { SearchInput } from "@/components/ui/SearchInput";
 import type { NoteWithCourse } from "@/types";
 import { getAllNotes, updateNote, deleteNote } from "@/lib/store";
 import { NoteEditor } from "@/components/course-detail/NoteEditor";
@@ -179,7 +179,7 @@ export function Notes({ className }: NotesProps) {
         className="mb-4 flex items-center gap-3"
         style={{ animation: `card-in 350ms ${EASE_OUT} 40ms both` }}
       >
-        <SquircleSearch
+        <SearchInput
           value={search}
           onChange={setSearch}
           placeholder="Search notes..."
@@ -378,10 +378,4 @@ function NoteItem({
       </div>
     </div>
   );
-}
-
-function stripHtml(html: string): string {
-  const tmp = document.createElement("div");
-  tmp.innerHTML = html;
-  return tmp.textContent ?? "";
 }

@@ -85,8 +85,8 @@ export function ServerBrowser({ servers, onPick, onClose, className }: ServerBro
         className="relative flex max-h-[80vh] w-full max-w-2xl flex-col"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="squircle-subtle absolute inset-0 bg-border/50" />
-        <div className="squircle-subtle absolute inset-px bg-card" />
+        <div className="rounded-xl absolute inset-0 bg-border/50" />
+        <div className="rounded-xl absolute inset-px bg-card" />
 
         <div className="relative flex min-h-0 flex-col p-5">
           <div className="mb-4 flex items-center justify-between gap-4">

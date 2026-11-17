@@ -1,7 +1,7 @@
 {
   "name": "ckourse-linux",
   "private": true,
-  "version": "2.0.1",
+  "version": "2.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,7 +10,7 @@
     "tauri": "bash scripts/tauri-wrapper.sh",
     "release": "bash scripts/release.sh",
     "pretauri": "bash scripts/build-native-stream-plugin.sh",
-    "appimage:build": "npm run pretauri && bash scripts/build-appimage.sh",
+    "appimage:build": "npm run pretauri && bash build-appimage.sh",
     "tauri:cli": "tauri"
   },
   "dependencies": {

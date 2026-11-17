@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
 import { AppShell } from "@/components/app-shell/AppShell";
+import { Home } from "@/pages/Home";
 import { Dashboard } from "@/pages/Dashboard";
 import { CourseDetail } from "@/pages/CourseDetail";
 import { ImportCourse } from "@/pages/ImportCourse";
@@ -80,7 +81,8 @@ function KeepAliveRoutes() {
           style={{ display: cachedKey === key ? undefined : "none" }}
         >
           <Routes location={cachedLocation}>
-            <Route path="/" element={<Dashboard />} />
+            <Route path="/" element={<Home />} />
+            <Route path="/library" element={<Dashboard />} />
             <Route path="/bookmarks" element={<Bookmarks />} />
             <Route path="/progress" element={<Progress />} />
             <Route path="/notes" element={<Notes />} />

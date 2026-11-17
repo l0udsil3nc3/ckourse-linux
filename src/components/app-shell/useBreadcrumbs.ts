@@ -15,7 +15,7 @@ export function useBreadcrumbs(): BreadcrumbItem[] {
   if (courseMatch) {
     // from may include search params (e.g. "/?q=react"), extract pathname for label
     const fromPathname = from ? from.split("?")[0] : "/";
-    const parentLabel = routeTitles[fromPathname] || "Dashboard";
+    const parentLabel = routeTitles[fromPathname] || "Home";
     const parentPath = from || "/";
     const courseId = Number(courseMatch[1]);
     const courseTitle = titles[courseId] ?? "Course Details";
@@ -25,10 +25,10 @@ export function useBreadcrumbs(): BreadcrumbItem[] {
     ];
   }
 
-  // Import: Dashboard > Import Course
+  // Import: Home > Import Course
   if (pathname === "/import") {
     return [
-      { label: "Dashboard", path: "/" },
+      { label: "Home", path: "/" },
       { label: "Import Course" },
     ];
   }

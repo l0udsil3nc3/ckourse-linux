@@ -70,7 +70,7 @@ function Section({ title, icon, children, index, className }: SectionProps) {
         animation: `card-in 350ms ${EASE_OUT} ${index * 60}ms both`,
       }}
     >
-      <div className="squircle-subtle absolute inset-0 bg-card" />
+      <div className="rounded-xl absolute inset-0 bg-card" />
       <div className="relative p-5">
         <div className="mb-4 flex items-center gap-2">
           {icon}
@@ -92,7 +92,7 @@ interface StatPillProps {
 function StatPill({ label, value, sub, icon }: StatPillProps) {
   return (
     <div className="flex items-center gap-3">
-      <div className="squircle flex size-10 shrink-0 items-center justify-center bg-secondary">
+      <div className="rounded-lg flex size-10 shrink-0 items-center justify-center bg-secondary">
         {icon}
       </div>
       <div>
@@ -239,7 +239,7 @@ function CourseProgressList({ courses }: { courses: CourseProgress[] }) {
 function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number }>; label?: string }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="squircle bg-popover px-3 py-1.5">
+    <div className="rounded-lg bg-popover px-3 py-1.5">
       <span className="font-sans text-[11px] text-muted-foreground">{label}: </span>
       <span className="font-mono text-[11px] font-medium text-foreground">{payload[0].value}</span>
     </div>
@@ -332,7 +332,7 @@ export function Progress({ className }: ProgressProps) {
         className="relative mb-6"
         style={{ animation: `card-in 350ms ${EASE_OUT} 40ms both` }}
       >
-        <div className="squircle-subtle absolute inset-0 bg-card" />
+        <div className="rounded-xl absolute inset-0 bg-card" />
         <div className="relative p-5">
           {/* Current level header */}
           <div className="mb-5 flex items-center gap-4">
@@ -446,7 +446,7 @@ export function Progress({ className }: ProgressProps) {
         className="relative mb-6"
         style={{ animation: `card-in 350ms ${EASE_OUT} 80ms both` }}
       >
-        <div className="squircle-subtle absolute inset-0 bg-card" />
+        <div className="rounded-xl absolute inset-0 bg-card" />
         <div className="relative grid grid-cols-2 gap-6 p-5 lg:grid-cols-4">
           <StatPill
             icon={<Fire className="size-5 text-orange-400" weight="fill" />}

@@ -41,7 +41,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import loadingAnimation from "@/assets/lotties/loading.json";
 import { cn } from "@/lib/utils";
-import { SquircleButton } from "@/components/ui/SquircleButton";
+import { ActionButton } from "@/components/ui/ActionButton";
 import type { CourseCategory, ParsedCourse, ParsedSection, ParsedLesson } from "@/types";
 import { selectCourseFolder, parseCourseFolder } from "@/lib/courseParser";
 import {
@@ -439,13 +439,13 @@ function FolderSelectStep({
       >
         <div
           className={cn(
-            "squircle-subtle absolute inset-0 transition-colors",
+            "rounded-xl absolute inset-0 transition-colors",
             isDragOver ? "bg-primary" : "bg-border"
           )}
         />
         <div
           className={cn(
-            "squircle-subtle absolute inset-px transition-colors",
+            "rounded-xl absolute inset-px transition-colors",
             isDragOver ? "bg-primary/10" : "bg-card group-hover:bg-secondary"
           )}
         />
@@ -666,8 +666,8 @@ function ConfigureStep({
 
       <div style={{ animation: `card-in 350ms ${EASE_OUT} 50ms both` }}>
         <div className="group relative">
-          <div className="squircle-subtle absolute inset-0 bg-border" />
-          <div className="squircle-subtle absolute inset-px bg-card" />
+          <div className="rounded-xl absolute inset-0 bg-border" />
+          <div className="rounded-xl absolute inset-px bg-card" />
           <div className="relative flex items-center gap-3 px-4 py-3">
             <FolderOpen className="size-4 shrink-0 text-primary" />
             <span className="truncate font-mono text-xs text-muted-foreground">
@@ -819,14 +819,14 @@ function ConfigureStep({
         <span className="font-sans text-xs text-muted-foreground">
           {totalLessons} lessons will be imported
         </span>
-        <SquircleButton
+        <ActionButton
           variant="primary"
           onClick={onImport}
           disabled={!title.trim()}
         >
           <UploadSimple className="size-4" weight="bold" />
           Import Course
-        </SquircleButton>
+        </ActionButton>
       </div>
     </div>
   );
@@ -1236,8 +1236,8 @@ function FieldGroup({
         {label}
       </label>
       <div className="group/field relative">
-        <div className="squircle absolute inset-0 bg-border/25 transition-colors group-focus-within/field:bg-primary" />
-        <div className="squircle absolute inset-px bg-card" />
+        <div className="rounded-lg absolute inset-0 bg-border/25 transition-colors group-focus-within/field:bg-primary" />
+        <div className="rounded-lg absolute inset-px bg-card" />
         <div className="relative px-4 py-2.5">
           {children}
         </div>

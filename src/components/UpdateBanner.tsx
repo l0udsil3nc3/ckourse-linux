@@ -27,7 +27,7 @@ export function UpdateBanner() {
       className="pointer-events-none fixed inset-x-0 bottom-6 z-40 flex justify-center px-6"
       style={{ animation: `card-in 300ms ${EASE_OUT} both` }}
     >
-      <div className="squircle pointer-events-auto flex w-full max-w-md items-center gap-3 border border-border bg-card/95 p-3 pl-4 shadow-lg backdrop-blur">
+      <div className="rounded-lg pointer-events-auto flex w-full max-w-md items-center gap-3 border border-border bg-card/95 p-3 pl-4 shadow-lg backdrop-blur">
         <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-primary">
           <ArrowClockwise className="size-4" weight="bold" />
         </div>

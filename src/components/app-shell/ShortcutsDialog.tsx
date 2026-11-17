@@ -107,8 +107,8 @@ export function ShortcutsDialog({ className }: { className?: string }) {
           }}
           onPointerDown={(e) => e.stopPropagation()}
         >
-          <div className="squircle-subtle absolute inset-0 bg-border/60" />
-          <div className="squircle-subtle absolute inset-px bg-card" />
+          <div className="rounded-xl absolute inset-0 bg-border/60" />
+          <div className="rounded-xl absolute inset-px bg-card" />
 
           <div className="relative max-h-[60vh] overflow-y-auto px-5 py-4">
             <div className="mb-3 flex items-center justify-between">

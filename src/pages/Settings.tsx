@@ -621,7 +621,7 @@ export function Settings({ className }: SettingsProps) {
         className="mb-8 flex items-center gap-3"
         style={{ animation: `card-in 350ms ${EASE_OUT} both` }}
       >
-        <div className="squircle flex size-10 items-center justify-center bg-primary/15">
+        <div className="rounded-lg flex size-10 items-center justify-center bg-primary/15">
           <GearSix className="size-5 text-primary" weight="bold" />
         </div>
         <div>

@@ -12,7 +12,6 @@ import { AnimatedThemeToggler } from "@/components/ui/animatedThemeToggle";
 import { ShortcutsDialog } from "@/components/app-shell/ShortcutsDialog";
 import logoIcon from "@/assets/icons/logo-icon.png";
 import { spring, navigationItems, appItems } from "./constants";
-import { SquircleClipDefs } from "./SquircleClipDefs";
 import { useBreadcrumbs } from "./useBreadcrumbs";
 import { CourseTitleProvider } from "./CourseTitleContext";
 import { NavSection } from "./NavSection";
@@ -73,8 +72,6 @@ function AppShellInner({ children }: AppShellProps) {
 
   return (
     <div className="flex h-screen flex-col bg-linear-to-b from-background to-sidebar text-foreground">
-      <SquircleClipDefs />
-
       {/* Drag strip — provides window dragging and clears the traffic lights zone */}
       <div data-tauri-drag-region className="h-7 w-full shrink-0" />
 
@@ -124,7 +121,7 @@ function AppShellInner({ children }: AppShellProps) {
                     className="h-7 transition-opacity duration-200 group-hover:opacity-0"
                   />
                   <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-                    <div className="squircle flex size-10 items-center justify-center bg-sidebar-accent text-sidebar-foreground">
+                    <div className="rounded-lg flex size-10 items-center justify-center bg-sidebar-accent text-sidebar-foreground">
                       <SquareHalf className="size-4 -scale-x-100" />
                     </div>
                   </div>
@@ -132,7 +129,7 @@ function AppShellInner({ children }: AppShellProps) {
               ) : (
                 <button
                   onClick={() => setCollapsed(true)}
-                  className="squircle ml-auto flex size-9 shrink-0 items-center justify-center text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                  className="rounded-lg ml-auto flex size-9 shrink-0 items-center justify-center text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
                 >
                   <SquareHalf className="size-4" />
                 </button>
@@ -209,11 +206,13 @@ function AppShellInner({ children }: AppShellProps) {
 
           <nav className="flex flex-1 flex-col gap-1 overflow-y-auto overflow-x-hidden px-3 pt-4">
             <NavSection label="Navigation" collapsed={effectiveCollapsed} items={navigationItems} />
-            <div className="mx-3 my-3 border-t border-sidebar-border/50" />
-            <NavSection label="App" collapsed={effectiveCollapsed} items={appItems} />
           </nav>
 
-          <div className="mx-3 mb-4 mt-auto h-px bg-linear-to-r from-transparent via-primary/20 to-transparent" />
+          {/* App items pinned to the bottom-left corner */}
+          <div className="shrink-0 px-3 pb-4">
+            <div className="mb-3 h-px bg-linear-to-r from-transparent via-primary/20 to-transparent" />
+            <NavSection label="App" collapsed={effectiveCollapsed} items={appItems} />
+          </div>
         </aside>
 
         <main

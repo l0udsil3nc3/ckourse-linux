@@ -13,7 +13,7 @@ import {
 } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { SquircleButton } from "@/components/ui/SquircleButton";
+import { ActionButton } from "@/components/ui/ActionButton";
 import { EASE_OUT, SNAPPY } from "@/lib/constants";
 import type { CourseCategory, Course } from "@/types";
 import {
@@ -197,8 +197,8 @@ export function CourseEditPanel({
         }}
       >
         <div className="group relative">
-          <div className="squircle-subtle absolute inset-0 bg-border" />
-          <div className="squircle-subtle absolute inset-px bg-card" />
+          <div className="rounded-xl absolute inset-0 bg-border" />
+          <div className="rounded-xl absolute inset-px bg-card" />
           <div className="relative flex items-center gap-3 px-4 py-3">
             <FolderOpen className="size-4 shrink-0 text-primary" />
             <span className="truncate font-mono text-xs text-muted-foreground">
@@ -271,14 +271,14 @@ export function CourseEditPanel({
           </div>
 
           <div className="flex items-center gap-3 pt-2">
-            <SquircleButton
+            <ActionButton
               variant="primary"
               onClick={handleSave}
               disabled={!title.trim() || !hasChanges || saving}
             >
               <FloppyDisk className="size-4" weight="bold" />
               {saving ? "Saving..." : "Save Changes"}
-            </SquircleButton>
+            </ActionButton>
             {hasChanges && (
               <span className="font-sans text-xs text-muted-foreground">
                 Unsaved changes
@@ -671,8 +671,8 @@ function FieldGroup({
         {label}
       </label>
       <div className="group/field relative">
-        <div className="squircle absolute inset-0 bg-border/25 transition-colors group-focus-within/field:bg-primary" />
-        <div className="squircle absolute inset-px bg-card" />
+        <div className="rounded-lg absolute inset-0 bg-border/25 transition-colors group-focus-within/field:bg-primary" />
+        <div className="rounded-lg absolute inset-px bg-card" />
         <div className="relative px-4 py-2.5">{children}</div>
       </div>
     </div>

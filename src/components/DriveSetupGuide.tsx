@@ -316,7 +316,7 @@ export function DriveSetupGuide() {
 
                 {/* Header */}
                 <div className="mb-4 flex items-center gap-3 pr-8">
-                  <div className="squircle flex size-10 shrink-0 items-center justify-center bg-primary/15">
+                  <div className="rounded-lg flex size-10 shrink-0 items-center justify-center bg-primary/15">
                     {current.icon}
                   </div>
                   <div>
